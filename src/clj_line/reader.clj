@@ -3,7 +3,7 @@
     [clojure.tools.reader :as r]
     [clojure.tools.reader.reader-types :as rt])
   (:import
-    [org.jline.reader EOFError]
+    [org.jline.reader EOFError Parser$ParseContext]
     [org.jline.reader.impl DefaultParser]))
 
 (defn complete?
@@ -29,12 +29,13 @@
         (if (identical? form ::eof) acc (recur (conj acc form)))))))
 
 (defn clojure-parser
-  "Throws EOFError on incomplete input so JLine will read multiple lines.
-   Complete input falls through to DefaultParser."
+  "On Enter, ACCEPT_LINE, throws EOFError for incomplete input so JLine will
+   read multiple lines. Every other case, complete input, or any other context
+   such as tab completion, falls through to DefaultParser."
   []
   (proxy [DefaultParser] []
     (parse [line cursor context]
-      (when-not (complete? line)
+      (when (and (= context Parser$ParseContext/ACCEPT_LINE) (not (complete? line)))
         (throw (EOFError. -1 -1 "Incomplete form" "...")))
       (proxy-super parse line cursor context))))
 
