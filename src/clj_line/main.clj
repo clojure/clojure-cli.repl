@@ -1,27 +1,18 @@
 (ns clj-line.main
   (:require
     [clojure.main :as m]
-    [clj-line.color :refer [palette]]
+    [clojure.repl.deps :as deps]
+    [clojure.tools.deps.config :as dc]
+    [clj-line.api :as api]
+    [clj-line.color :as color]
     [clj-line.highlight :as highlight]
     [clj-line.reader :as reader])
   (:import
     [org.jline.terminal TerminalBuilder]
     [org.jline.reader LineReader LineReaderBuilder EndOfFileException UserInterruptException Reference Widget]
-    [org.jline.keymap KeyMap]
-    [org.jline.utils AttributedString AttributedStringBuilder AttributedStyle]))
+    [org.jline.keymap KeyMap]))
 
-(defn build-attrib-str
-  "Build an AttributedString from a seq of [text style] pairs."
-  ^AttributedString [pairs]
-  (let [asb (AttributedStringBuilder.)]
-    (doseq [[^String text ^AttributedStyle style] pairs]
-      (.append asb text style))
-    (.toAttributedString asb)))
-
-(defn prompt-str ^String []
-  (.toAnsi (build-attrib-str [["λ " (:prompt-lambda palette)]
-                              [(str (ns-name *ns*)) (:prompt-ns palette)]
-                              ["=> " (:prompt-suffix palette)]])))
+(def lib 'org.clojure/clj-line)
 
 (defn indent-or-accept
   "Returns a JLine widget for the Enter key. A complete buffer gets submitted.
@@ -54,10 +45,15 @@
     (.bind ^KeyMap (.get (.getKeyMaps rdr) LineReader/MAIN) (Reference. widget-name) "\r")
     rdr))
 
-(defn jline-read [^LineReader rdr]
+(defn default-prompt []
+  [{:text (str (ns-name *ns*)) :style {:fg :blue :bold true}}
+   {:text "=> "}])
+
+(defn jline-read [^LineReader rdr prompt-fn]
   (fn [request-prompt request-exit]
     (try
-      (let [forms (reader/read-all (.readLine rdr (prompt-str)))]
+      (let [prompt (.toAnsi (color/build-attrib-str (prompt-fn)))
+            forms  (reader/read-all (.readLine rdr prompt))]
         (case (count forms)
           0 request-prompt
           1 (first forms)
@@ -68,15 +64,43 @@
 (defn tap-printer
   "Returns a tap fn that renders each value above the input line using JLine printAbove.
   Enables printing async values without scrambling typing."
-  [^LineReader rdr]
+  []
   (fn [value]
-    (.printAbove rdr (build-attrib-str [["tap> " (:tap-label palette)]
-                                        [(pr-str value) (:prompt-suffix palette)]]))))
+    (api/print-above [{:text "tap> " :style {:fg :magenta}}
+                      {:text (pr-str value)}])))
+
+;; NOTE this might go away entirely if the project splits into two processes.
+(defn data-dir-deps
+  "A :local/root coord for each config location whose data dir contains a deps.edn,
+   so a prompt project placed there needs no explicit :deps entry."
+  []
+  (into {}
+        (for [location [:user :project]
+              :let [^java.io.File dir (dc/data-dir location lib)]
+              :when (.exists (java.io.File. dir "deps.edn"))]
+          [(symbol "clj-line" (str (name location) "-data"))
+           {:local/root (.getPath dir)}])))
+
+(defn add-config-deps [config]
+  (when-let [deps (not-empty (into (or (:deps config) {}) (data-dir-deps)))]
+    ;; add-libs needs a DynamicClassLoader context and *repl* bound
+    (.setContextClassLoader
+      (Thread/currentThread)
+      (clojure.lang.DynamicClassLoader. (.getContextClassLoader (Thread/currentThread))))
+    (binding [*repl* true] (deps/add-libs deps))))
 
 (defn -main [& _]
-  (let [rdr (build-line-reader)]
-    (add-tap (tap-printer rdr))
+  (let [config (dc/config lib)
+        _ (add-config-deps config)
+        prompt-fn (if-let [user-prompt (:prompt config)]
+                    (requiring-resolve user-prompt)
+                    default-prompt)
+        eval-hook (when-let [eh (:eval-hook config)] (requiring-resolve eh))
+        rdr (build-line-reader)]
+    (reset! api/reader rdr)
+    (add-tap (tap-printer))
     (m/repl
       :prompt      (fn [])
       :need-prompt (constantly true)
-      :read        (jline-read rdr))))
+      :eval        (if eval-hook (eval-hook eval) eval)
+      :read        (jline-read rdr prompt-fn))))

@@ -1,7 +1,8 @@
 {:paths ["src"]
- :deps {org.clojure/clojure       {:mvn/version "1.12.5"}
-        org.clojure/tools.reader  {:mvn/version "1.6.0"}
-        org.jline/jline           {:mvn/version "4.1.2"}}
+ :deps {org.clojure/clojure            {:mvn/version "1.12.5"}
+        org.clojure/tools.reader       {:mvn/version "1.6.0"}
+        org.jline/jline                {:mvn/version "4.1.2"}
+        org.clojure/tools.deps.config  {:local/root "../tools.deps.config"}} ;; TODO
 
  :aliases {:repl {:main-opts ["-m" "clj-line.main"]}
            :dev {:extra-deps {nrepl/nrepl {:mvn/version "1.1.2"}

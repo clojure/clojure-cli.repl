@@ -2,10 +2,11 @@
 
 ## Implemented Features
 
-* Multiple lines which are numbered.
+* Multiple lines.
 * New lines are indented one space past the last opening bracket.
 * Unmatched brackets are highlighted red.
 * Tap outputs to JLine's [printAbove](https://jline.org/docs/examples/print-above/)
+* Custom prompts
 
 ## Planned Features
 
@@ -20,8 +21,6 @@
 | Read, Eval, Print, Caught hooks                                                        | High      |
 | Bracket pairs & structural-editing                                                     | Medium    |
 | Docs                                                                                   | Medium    |
-| Colored prompt text                                                                    | Medium    |
-| Prompt text derived from function output (Git, Current NS, Docker, etc)                | Medium    |
 | Secondary prompt (format and content of continuation line, line numbers, colors)       | Medium    |
 | Pretty-print toggle                                                                    | Medium    |
 | Tap: (on/off, tap out text, filter pred)                                               | Medium    |

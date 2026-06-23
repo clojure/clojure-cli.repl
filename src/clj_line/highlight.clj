@@ -1,6 +1,6 @@
 (ns clj-line.highlight
   (:require
-    [clj-line.color :refer [palette]]
+    [clj-line.color :as color]
     [clj-line.reader :as reader])
   (:import
     [org.jline.reader Highlighter]
@@ -8,7 +8,7 @@
 
 (defn highlight-clj [^String buffer]
   (let [bad (reader/unmatched-brackets buffer)
-        ^AttributedStyle bad-style (:bad-bracket palette)
+        ^AttributedStyle bad-style (color/build-style {:fg :red :bold true})
         asb (AttributedStringBuilder.)]
     (dotimes [i (.length buffer)]
       (.append asb (.substring buffer i (inc i))
