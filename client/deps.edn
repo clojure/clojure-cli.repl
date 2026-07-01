@@ -1,0 +1,11 @@
+{:paths ["src"]
+ :deps {org.clojure/clojure           {:mvn/version "1.12.5"}
+        org.clojure/tools.reader      {:mvn/version "1.6.0"}
+        org.clojure/tools.deps.config {:local/root "../../tools.deps.config"}
+        org.jline/jline               {:mvn/version "4.3.1"}
+        nrepl/nrepl                   {:mvn/version "1.7.0"}}
+
+ :aliases {:test {:extra-paths ["test"]
+                  :extra-deps {io.github.cognitect-labs/test-runner
+                               {:git/tag "v0.5.1" :git/sha "dfb30dd"}}
+                  :main-opts ["-m" "cognitect.test-runner"]}}}

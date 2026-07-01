@@ -10,6 +10,14 @@
   "Atom holding the running JLine LineReader."
   (atom nil))
 
+(def current-ns
+  "Atom holding the current namespace based on eval response."
+  (atom "user"))
+
+(def last-response
+  "Atom holding the last eval's nREPL response."
+  (atom nil))
+
 (defn terminal
   "The running JLine Terminal."
   ^Terminal []
