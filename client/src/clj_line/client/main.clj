@@ -8,7 +8,7 @@
     [clj-line.highlight :as highlight]
     [clj-line.color :as color])
   (:import
-    [org.jline.terminal TerminalBuilder]
+    [org.jline.terminal Terminal$Signal Terminal$SignalHandler TerminalBuilder]
     [org.jline.reader LineReader LineReaderBuilder Reference Widget EndOfFileException UserInterruptException]
     [org.jline.keymap KeyMap]))
 
@@ -62,6 +62,10 @@
         {:keys [session]} (nrepl/connect port)
         rdr (build-reader)]
     (reset! api/reader rdr)
+    ;; ctrl-c during an eval outside of .readLine needs to interrupt the server
+    (.handle (.getTerminal rdr) Terminal$Signal/INT
+             (reify Terminal$SignalHandler
+               (handle [_ _sig] (nrepl/interrupt session))))
     (println "connected to nREPL on" port)
     (loop [ns "user"]
       (reset! api/current-ns ns)

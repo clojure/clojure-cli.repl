@@ -14,6 +14,9 @@
           {}
           (nrepl/message session {:op "eval" :code code})))
 
+(defn interrupt [session]
+  (nrepl/message session {:op "interrupt"}))
+
 (defn connect [port]
   (let [conn (nrepl/connect :port port)
         client (nrepl/client conn Long/MAX_VALUE)
