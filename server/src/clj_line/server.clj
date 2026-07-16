@@ -1,5 +1,6 @@
 (ns clj-line.server
   (:require
+    [clojure.java.io :as io]
     [nrepl.server :as server]
     [clj-line.server.eval-hook :as hook]))
 
@@ -11,3 +12,7 @@
         srv (server/start-server :port (or port 0) :handler handler)]
     (spit ".nrepl-port" (str (:port srv)))
     srv))
+
+(defn stop [srv]
+  (server/stop-server srv)
+  (io/delete-file ".nrepl-port" :silently))

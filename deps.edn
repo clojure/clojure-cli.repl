@@ -1,0 +1,19 @@
+{:aliases
+ {;; nREPL server
+  :serve
+  {:replace-paths []
+   :replace-deps {clj-line/server {:local/root "server"}}
+   :main-opts ["-m" "clj-line.server.main"]}
+
+  ;; terminal client
+  :attach
+  {:replace-paths []
+   :replace-deps {clj-line/client {:local/root "client"}}
+   :main-opts ["-m" "clj-line.client.main"]}
+
+  ;; terminal repl
+  ;; After the server starts the client gets spawned
+  :repl
+  {:replace-paths []
+   :replace-deps {clj-line/server {:local/root "server"}}
+   :main-opts ["-m" "clj-line.server.main" "repl"]}}}

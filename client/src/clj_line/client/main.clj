@@ -26,6 +26,17 @@
           (.write buf (str "\n" (apply str (repeat (reader/indent-column line) \space))))))
       true)))
 
+(defn eof-or-delete
+  "Returns a JLine widget for ctrl-d that ends input on an empty line.
+   JLine's default binding leaves no way to exit the repl."
+  ^Widget [^LineReader rdr]
+  (reify Widget
+    (apply [_]
+      (if (zero? (.length (.getBuffer rdr)))
+        (throw (EndOfFileException.))
+        (.callWidget rdr "delete-char"))
+      true)))
+
 (defn build-reader ^LineReader []
   (let [terminal (-> (TerminalBuilder/builder)
                      (.system true)
@@ -38,9 +49,11 @@
                      (.highlighter (highlight/clojure-highlighter))
                      (.variable LineReader/SECONDARY_PROMPT_PATTERN "%N%P > ")
                      .build)
-        widget-name "indent-or-accept"]
-    (.put (.getWidgets rdr) widget-name (indent-or-accept rdr))
-    (.bind ^KeyMap (.get (.getKeyMaps rdr) LineReader/MAIN) (Reference. widget-name) "\r")
+        ^KeyMap keymap (.get (.getKeyMaps rdr) LineReader/MAIN)]
+    (.put (.getWidgets rdr) "indent-or-accept" (indent-or-accept rdr))
+    (.bind keymap (Reference. "indent-or-accept") "\r")
+    (.put (.getWidgets rdr) "eof-or-delete" (eof-or-delete rdr))
+    (.bind keymap (Reference. "eof-or-delete") (KeyMap/ctrl \D))
     rdr))
 
 (defn default-prompt []
@@ -56,8 +69,24 @@
 (defn render-prompt ^String [prompt-fn]
   (.toAnsi (color/build-attrib-str (prompt-fn))))
 
+(defn load-config
+  "Read the config, first putting its src dirs on the classpath so their code can
+   be required. Set a DynamicClassLoader as the thread's context loader since the
+   app loader for a `-M -m` process is not extensible."
+  [lib]
+  (let [dirs (->> [:project :user]
+                  (map #(dc/data-file % lib "src"))
+                  (filter (fn [^java.io.File d] (.isDirectory d))))]
+    (when (seq dirs)
+      (let [thread (Thread/currentThread)
+            loader (clojure.lang.DynamicClassLoader. (.getContextClassLoader thread))]
+        (doseq [^java.io.File d dirs]
+          (.addURL loader (.toURL (.toURI d))))
+        (.setContextClassLoader thread loader))))
+  (dc/config lib))
+
 (defn -main [& args]
-  (let [prompt-fn (resolve-prompt (dc/config 'org.clojure/clj-line))
+  (let [prompt-fn (resolve-prompt (load-config 'org.clojure/clj-line))
         port (Integer/parseInt (str/trim (or (first args) (slurp ".nrepl-port"))))
         {:keys [session]} (nrepl/connect port)
         rdr (build-reader)]
@@ -77,4 +106,7 @@
                    ns
                    (let [resp (nrepl/eval-code session line)]
                      (reset! api/last-response resp)
-                     (or (:ns resp) ns)))))))))
+                     (or (:ns resp) ns)))))))
+    ;; jline and the nrepl client leave non-daemon threads behind
+    (.close (.getTerminal rdr))
+    (System/exit 0)))
