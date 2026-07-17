@@ -6,6 +6,8 @@
     [org.jline.reader LineReader]
     [org.jline.terminal Terminal]))
 
+(set! *warn-on-reflection* true)
+
 (def reader
   "Atom holding the running JLine LineReader."
   (atom nil))

@@ -2,6 +2,8 @@
   (:require
     [nrepl.core :as nrepl]))
 
+(set! *warn-on-reflection* true)
+
 (defn render [{:keys [out err value]}]
   (when out (print out) (flush))
   (when err (binding [*out* *err*] (print err) (flush)))

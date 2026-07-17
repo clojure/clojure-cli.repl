@@ -2,6 +2,8 @@
   (:require
     [nrepl.middleware :refer [set-descriptor!]]))
 
+(set! *warn-on-reflection* true)
+
 (def evaluator (atom eval))
 (defn hooked-eval [form] (@evaluator form))
 

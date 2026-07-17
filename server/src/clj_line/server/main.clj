@@ -3,6 +3,8 @@
     [clojure.tools.deps.config :as dc]
     [clj-line.server :as server]))
 
+(set! *warn-on-reflection* true)
+
 (defn load-config
   "Read the config, first putting its src dirs on the classpath so their code can
    be required. Set a DynamicClassLoader as the thread's context loader since the

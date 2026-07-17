@@ -2,6 +2,8 @@
   (:import
     [org.jline.utils AttributedString AttributedStringBuilder AttributedStyle]))
 
+(set! *warn-on-reflection* true)
+
 (def colors
   {:black          AttributedStyle/BLACK
    :red            AttributedStyle/RED

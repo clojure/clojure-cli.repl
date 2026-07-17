@@ -4,6 +4,8 @@
     [nrepl.server :as server]
     [clj-line.server.eval-hook :as hook]))
 
+(set! *warn-on-reflection* true)
+
 (defn start [{:keys [eval-hook middleware port]}]
   (when eval-hook
     (hook/install (requiring-resolve eval-hook)))

@@ -6,6 +6,8 @@
     [org.jline.reader EOFError Parser$ParseContext]
     [org.jline.reader.impl DefaultParser]))
 
+(set! *warn-on-reflection* true)
+
 (defn complete?
   "True unless src needs more input to finish.
   Finished but invalid input returns true."
@@ -33,11 +35,12 @@
    read multiple lines. Every other case, complete input, or any other context
    such as tab completion, falls through to DefaultParser."
   []
-  (proxy [DefaultParser] []
-    (parse [line cursor context]
-      (when (and (= context Parser$ParseContext/ACCEPT_LINE) (not (complete? line)))
-        (throw (EOFError. -1 -1 "Incomplete form" "...")))
-      (proxy-super parse line cursor context))))
+  (let [^DefaultParser default (DefaultParser.)]
+    (proxy [DefaultParser] []
+      (parse [line cursor context]
+        (when (and (= context Parser$ParseContext/ACCEPT_LINE) (not (complete? line)))
+          (throw (EOFError. -1 -1 "Incomplete form" "...")))
+        (.parse default line cursor context)))))
 
 (defn skip-string
   "Given the index of an opening quote, return the index one after
@@ -74,7 +77,7 @@
             (= c \")        (recur (skip-string src pos) stack bad)
             (= c \\)        (recur (min len (+ pos 2)) stack bad)
             (#{\( \[ \{} c) (recur (inc pos) (conj stack [pos (closer-of c)]) bad)
-            (#{\) \] \}} c) (if (= c (second (peek stack)))
+            (#{\) \] \}} c) (if (= c ^Character (second (peek stack)))
                               (recur (inc pos) (pop stack) bad)
                               (recur (inc pos) stack (conj bad pos)))
             :else           (recur (inc pos) stack bad)))))))

@@ -6,6 +6,8 @@
     [org.jline.reader Highlighter]
     [org.jline.utils AttributedStringBuilder AttributedStyle]))
 
+(set! *warn-on-reflection* true)
+
 (defn highlight-clj [^String buffer]
   (let [bad (reader/unmatched-brackets buffer)
         ^AttributedStyle bad-style (color/build-style {:fg :red :bold true})
