@@ -12,6 +12,8 @@
     [org.jline.reader LineReader LineReaderBuilder Reference Widget EndOfFileException UserInterruptException]
     [org.jline.keymap KeyMap]))
 
+(set! *warn-on-reflection* true)
+
 (defn indent-or-accept
   "Returns a JLine widget for the Enter key. A complete buffer gets submitted.
    Otherwise it inserts a newline with enough spaces to align
@@ -37,7 +39,7 @@
         (.callWidget rdr "delete-char"))
       true)))
 
-(defn build-reader ^LineReader []
+(defn build-reader ^LineReader [^java.io.File history-file]
   (let [terminal (-> (TerminalBuilder/builder)
                      (.system true)
                      (.ffm false)
@@ -48,6 +50,7 @@
                      (.parser (reader/clojure-parser))
                      (.highlighter (highlight/clojure-highlighter))
                      (.variable LineReader/SECONDARY_PROMPT_PATTERN "%N%P > ")
+                     (.variable LineReader/HISTORY_FILE history-file)
                      .build)
         ^KeyMap keymap (.get (.getKeyMaps rdr) LineReader/MAIN)]
     (.put (.getWidgets rdr) "indent-or-accept" (indent-or-accept rdr))
@@ -85,11 +88,21 @@
         (.setContextClassLoader thread loader))))
   (dc/config lib))
 
+(defn history-file
+  "REPL history file, location is user configurable [:project|:user] under
+   :history key, defaults to :user. Creates the parent dir if necessary."
+  [lib config]
+  (let [scope (if (= :project (:history config)) :project :user)
+        ^java.io.File f (dc/data-file scope lib "history")]
+    (.mkdirs (.getParentFile f))
+    f))
+
 (defn -main [& args]
-  (let [prompt-fn (resolve-prompt (load-config 'org.clojure/clj-line))
+  (let [config (load-config 'org.clojure/clj-line)
+        prompt-fn (resolve-prompt config)
         port (Integer/parseInt (str/trim (or (first args) (slurp ".nrepl-port"))))
         {:keys [session]} (nrepl/connect port)
-        rdr (build-reader)]
+        rdr (build-reader (history-file 'org.clojure/clj-line config))]
     (reset! api/reader rdr)
     ;; ctrl-c during an eval outside of .readLine needs to interrupt the server
     (.handle (.getTerminal rdr) Terminal$Signal/INT
