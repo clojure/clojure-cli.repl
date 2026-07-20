@@ -12,14 +12,34 @@ The root `deps.edn` aliases compose the classpath for each process:
 * `clojure -M:attach [port]` client reads .nrepl-port if no port is provided
 * `clojure -M:repl` a server that spawns a client
 
+## Configuration
+
+A flat EDN map, merged from a user file and overridable with a project file:
+
+* user: `~/.clojure/.cli-config/org.clojure/clj-line.edn`
+* project: `.cli-config/org.clojure/clj-line.edn`, in the project dir
+
+Options whose value is a symbol point to user provided code, loaded
+from a `src` dir next to the config. For example,
+`my-prompt/prompt` is loaded from `.cli-config/org.clojure/clj-line/src/my_prompt.clj`.
+
+| Key | Scope | Value | Effect (default) |
+|-----|-------|-------|------------------|
+| `:prompt` | client | qualified symbol | Fn returning prompt segments.            |
+| `:editing-mode` | client | `:vi` | Vi keybindings (emacs). |
+| `:history` | client | `:project` or `:user` | History scope (`:user`).         |
+| `:middleware` | server | vector of qualified symbols | nREPL middleware.                      |
+| `:eval-hook` | server | qualified symbol | Wraps eval: `(f eval)` returns the eval fn.     |
+| `:port` | server | int | nREPL port (OS-assigned). |
+
 ## Features
 
 - [x] Multiple lines that are properly indented
 - [x] Unmatched brackets are highlighted red
 - [x] Tap outputs to JLine's [printAbove](https://jline.org/docs/examples/print-above/)
 - [x] Custom prompts
-- [ ] History
-- [ ] Emacs/Vim editing key commands
+- [x] History
+- [x] Emacs/Vim editing key commands
 - [ ] Custom keybindings
 - [ ] Auto require/import
 - [ ] Print var defaults (`*print-level*`, `*print-length*`, `*print-namespace-maps*`, etc)

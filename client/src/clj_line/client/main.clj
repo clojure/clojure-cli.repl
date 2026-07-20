@@ -39,7 +39,17 @@
         (.callWidget rdr "delete-char"))
       true)))
 
-(defn build-reader ^LineReader [^java.io.File history-file]
+(defn unbind-control-self-inserts
+  "Unbind control keys that insert a literal control char.
+   JLine seems to miscount these and it breaks redrawing."
+  [^KeyMap keymap]
+  (let [self-insert (.getBound keymap "a")]
+    (doseq [c (range 0x20)
+            :let [k (str (char c))]
+            :when (= self-insert (.getBound keymap k))]
+      (.unbind keymap k))))
+
+(defn build-reader ^LineReader [^java.io.File history-file editing-mode]
   (let [terminal (-> (TerminalBuilder/builder)
                      (.system true)
                      (.ffm false)
@@ -52,11 +62,17 @@
                      (.variable LineReader/SECONDARY_PROMPT_PATTERN "%N%P > ")
                      (.variable LineReader/HISTORY_FILE history-file)
                      .build)
-        ^KeyMap keymap (.get (.getKeyMaps rdr) LineReader/MAIN)]
+        vi? (= :vi editing-mode)
+        keymaps (.getKeyMaps rdr)]
     (.put (.getWidgets rdr) "indent-or-accept" (indent-or-accept rdr))
-    (.bind keymap (Reference. "indent-or-accept") "\r")
     (.put (.getWidgets rdr) "eof-or-delete" (eof-or-delete rdr))
-    (.bind keymap (Reference. "eof-or-delete") (KeyMap/ctrl \D))
+    (doseq [keymap-name (if vi? [LineReader/VIINS LineReader/VICMD] [LineReader/MAIN])]
+      (let [^KeyMap keymap (.get keymaps keymap-name)]
+        (.bind keymap (Reference. "indent-or-accept") "\r")
+        (.bind keymap (Reference. "eof-or-delete") (KeyMap/ctrl \D))))
+    (when vi?
+      (.put keymaps LineReader/MAIN (.get keymaps LineReader/VIINS)) ;; `main` is each line's starting keymap defaulted to emacs
+      (unbind-control-self-inserts (.get keymaps LineReader/VIINS)))
     rdr))
 
 (defn default-prompt []
@@ -102,7 +118,7 @@
         prompt-fn (resolve-prompt config)
         port (Integer/parseInt (str/trim (or (first args) (slurp ".nrepl-port"))))
         {:keys [session]} (nrepl/connect port)
-        rdr (build-reader (history-file 'org.clojure/clj-line config))]
+        rdr (build-reader (history-file 'org.clojure/clj-line config) (:editing-mode config))]
     (reset! api/reader rdr)
     ;; ctrl-c during an eval outside of .readLine needs to interrupt the server
     (.handle (.getTerminal rdr) Terminal$Signal/INT

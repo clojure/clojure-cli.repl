@@ -46,7 +46,7 @@
   "Given the index of an opening quote, return the index one after
    the closing quote. Handles backslash escapes and returns len if the
    string is unterminated."
-  [^String src start]
+  ^long [^String src start]
   (let [len (.length src)]
     (loop [pos (inc start)]
       (cond
@@ -58,7 +58,7 @@
 (defn skip-comment
   "Given the index of the ; in src, returns the index of
    the newline, or src length if no newline."
-  [^String src start]
+  ^long [^String src start]
   (let [nl (.indexOf src (int \newline) (int start))]
     (if (neg? nl) (.length src) nl)))
 
@@ -75,7 +75,7 @@
           (cond
             (= c \;)        (recur (skip-comment src pos) stack bad)
             (= c \")        (recur (skip-string src pos) stack bad)
-            (= c \\)        (recur (min len (+ pos 2)) stack bad)
+            (= c \\)        (recur (long (min len (+ pos 2))) stack bad)
             (#{\( \[ \{} c) (recur (inc pos) (conj stack [pos (closer-of c)]) bad)
             (#{\) \] \}} c) (if (= c ^Character (second (peek stack)))
                               (recur (inc pos) (pop stack) bad)
