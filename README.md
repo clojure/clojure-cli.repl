@@ -4,6 +4,23 @@ clj-line runs as two processes. An nREPL server that evaluates code,
 and a JLine client that provides a terminal prompt. Keeping them
 separate keeps the client dependencies off the project classpath.
 
+## Local Install Usage
+
+Until it's released, add these aliases to your user `deps.edn` to run locally:
+
+```clojure
+{:aliases
+ {:repl   {:replace-paths [] :main-opts ["-m" "clj-line.server.main" "repl"]
+           :replace-deps {clj-line/server {:git/url "https://codeberg.org/JarrodCTaylor/clj-line.git"
+                                            :git/sha "030b2c41aaa4574e9bb9970bfe4273fe667f9484" :deps/root "server"}}}
+  :attach {:replace-paths [] :main-opts ["-m" "clj-line.client.main"]
+           :replace-deps {clj-line/client {:git/url "https://codeberg.org/JarrodCTaylor/clj-line.git"
+                                            :git/sha "030b2c41aaa4574e9bb9970bfe4273fe667f9484" :deps/root "client"}}}
+  :serve  {:replace-paths [] :main-opts ["-m" "clj-line.server.main"]
+           :replace-deps {clj-line/server {:git/url "https://codeberg.org/JarrodCTaylor/clj-line.git"
+                                            :git/sha "030b2c41aaa4574e9bb9970bfe4273fe667f9484" :deps/root "server"}}}}}
+```
+
 ## Run
 
 The root `deps.edn` aliases compose the classpath for each process:
