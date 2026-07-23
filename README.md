@@ -45,6 +45,7 @@ from a `src` dir next to the config. For example,
 | `:prompt` | client | qualified symbol | Fn returning prompt segments.            |
 | `:editing-mode` | client | `:vi` | Vi keybindings (emacs). |
 | `:history` | client | `:project` or `:user` | History scope (`:user`).         |
+| `:keybindings` | client | qualified symbol | Fn `(f reader)` binding keys. |
 | `:middleware` | server | vector of qualified symbols | nREPL middleware.                      |
 | `:eval-hook` | server | qualified symbol | Wraps eval: `(f eval)` returns the eval fn.     |
 | `:port` | server | int | nREPL port (OS-assigned). |
@@ -57,7 +58,7 @@ from a `src` dir next to the config. For example,
 - [x] Custom prompts
 - [x] History
 - [x] Emacs/Vim editing key commands
-- [ ] Custom keybindings
+- [x] Custom keybindings
 - [ ] Auto require/import
 - [ ] Print var defaults (`*print-level*`, `*print-length*`, `*print-namespace-maps*`, etc)
 - [ ] Customized exception printer function

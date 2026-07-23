@@ -80,9 +80,9 @@
    {:text " => "}])
 
 (defn resolve-prompt [config]
-  (if-let [spec (:prompt config)]
-    (or (requiring-resolve spec)
-        (throw (ex-info (str "clj-line: :prompt var not found: " spec) {:prompt spec})))
+  (if-let [prompt (:prompt config)]
+    (or (requiring-resolve prompt)
+        (throw (ex-info (str "clj-line: :prompt var not found: " prompt) {:prompt prompt})))
     default-prompt))
 
 (defn render-prompt ^String [prompt-fn]
@@ -113,6 +113,13 @@
     (.mkdirs (.getParentFile f))
     f))
 
+(defn apply-keybindings
+  [config reader]
+  (when-let [keybindings (:keybindings config)]
+    (if-let [f (requiring-resolve keybindings)]
+      (f reader)
+      (throw (ex-info (str "clj-line: :keybindings var not found: " keybindings) {:keybindings keybindings})))))
+
 (defn -main [& args]
   (let [config (load-config 'org.clojure/clj-line)
         prompt-fn (resolve-prompt config)
@@ -120,6 +127,8 @@
         {:keys [session]} (nrepl/connect port)
         rdr (build-reader (history-file 'org.clojure/clj-line config) (:editing-mode config))]
     (reset! api/reader rdr)
+    (reset! api/session session)
+    (apply-keybindings config rdr)
     ;; ctrl-c during an eval outside of .readLine needs to interrupt the server
     (.handle (.getTerminal rdr) Terminal$Signal/INT
              (reify Terminal$SignalHandler
