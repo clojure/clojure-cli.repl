@@ -120,11 +120,30 @@
       (f reader)
       (throw (ex-info (str "clj-line: :keybindings var not found: " keybindings) {:keybindings keybindings})))))
 
+(defn auto-require-code
+  "Returns code that requires libspecs into the current namespace.
+   nrepl rolls *1 *2 *3 forward after every eval so we reset them."
+  [libspecs]
+  (pr-str `(let [x# *1 y# *2 z# *3]
+             (require ~@(map #(list 'quote %) libspecs))
+             (set! *1 y#) (set! *2 z#)
+             x#)))
+
+(defn auto-require
+  "Evals a require of libspecs in the current namespace.
+   Prints the error if a libspec fails to load."
+  [session libspecs]
+  (when (seq libspecs)
+    (let [{:keys [ex err]} (nrepl/eval-quiet session (auto-require-code libspecs))]
+      (when ex
+        (println "clj-line: :auto-require failed:" (str/trim (or err ex)))))))
+
 (defn -main [& args]
   (let [config (load-config 'org.clojure/clj-line)
         prompt-fn (resolve-prompt config)
         port (Integer/parseInt (str/trim (or (first args) (slurp ".nrepl-port"))))
         {:keys [session]} (nrepl/connect port)
+        libspecs (:auto-require config)
         rdr (build-reader (history-file 'org.clojure/clj-line config) (:editing-mode config))]
     (reset! api/reader rdr)
     (reset! api/session session)
@@ -134,17 +153,20 @@
              (reify Terminal$SignalHandler
                (handle [_ _sig] (nrepl/interrupt session))))
     (println "connected to nREPL on" port)
+    (auto-require session libspecs)
     (loop [ns "user"]
       (reset! api/current-ns ns)
       (let [line (try (.readLine rdr (render-prompt prompt-fn))
                       (catch UserInterruptException _ "") ; ctrl-c
                       (catch EndOfFileException _ nil))] ; ctrl-d
         (when line
-          (recur (if (str/blank? line)
-                   ns
-                   (let [resp (nrepl/eval-code session line)]
-                     (reset! api/last-response resp)
-                     (or (:ns resp) ns)))))))
+          (let [new-ns (if (str/blank? line)
+                         ns
+                         (let [resp (nrepl/eval-code session line)]
+                           (reset! api/last-response resp)
+                           (or (:ns resp) ns)))]
+            (when (not= new-ns ns) (auto-require session libspecs))
+            (recur new-ns)))))
     ;; jline and the nrepl client leave non-daemon threads behind
     (.close (.getTerminal rdr))
     (System/exit 0)))

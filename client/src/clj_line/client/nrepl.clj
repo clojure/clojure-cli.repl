@@ -16,6 +16,14 @@
           {}
           (nrepl/message session {:op "eval" :code code})))
 
+(defn eval-quiet
+  "Evals without printing. Nrepl can split :err across messages."
+  [session code]
+  (let [messages (nrepl/message session {:op "eval" :code code})
+        merged-response (reduce merge {} messages)
+        whole-err (not-empty (apply str (keep :err messages)))]
+    (assoc merged-response :err whole-err)))
+
 (defn interrupt [session]
   (nrepl/message session {:op "interrupt"}))
 
