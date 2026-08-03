@@ -1,5 +1,6 @@
 (ns clj-line.client.main
   (:require
+    [clojure.java.shell :as sh]
     [clojure.string :as str]
     [clojure.tools.deps.config :as dc]
     [clj-line.client.nrepl :as nrepl]
@@ -88,19 +89,35 @@
 (defn render-prompt ^String [prompt-fn]
   (.toAnsi (color/build-attrib-str (prompt-fn))))
 
+(defn cli-classpath
+  "CP for the config's deps.edn -Srepro excludes global ~/.clojure/deps.edn"
+  [location lib]
+  (when (.isFile (dc/data-file location lib "deps.edn"))
+    (let [dir (dc/data-dir location lib)
+          {:keys [exit out err]} (sh/sh "clojure" "-Srepro" "-A:clj-line/client" "-Spath" :dir (str dir))]
+      (if (zero? exit)
+        (str/trim out)
+        (println "clj-line: could not resolve deps.edn in" (str dir) "-" (str/trim err))))))
+
+(defn classpath-files [^java.io.File dir ^String cp]
+  (map #(.toFile (.resolve (.toPath dir) ^String %))
+       (.split cp java.io.File/pathSeparator)))
+
+(defn config-classpath [location lib]
+  (when-let [cp (cli-classpath location lib)]
+    (classpath-files (dc/data-dir location lib) cp)))
+
 (defn load-config
-  "Read the config, first putting its src dirs on the classpath so their code can
-   be required. Set a DynamicClassLoader as the thread's context loader since the
-   app loader for a `-M -m` process is not extensible."
+  "Puts the config classpath on a DynamicClassLoader installed as the thread's
+   context loader. A new loader is required because the app loader cannot be
+   extended. Returns the config map."
   [lib]
-  (let [dirs (->> [:project :user]
-                  (map #(dc/data-file % lib "src"))
-                  (filter (fn [^java.io.File d] (.isDirectory d))))]
-    (when (seq dirs)
+  (let [entries (distinct (mapcat #(config-classpath % lib) [:project :user]))]
+    (when (seq entries)
       (let [thread (Thread/currentThread)
             loader (clojure.lang.DynamicClassLoader. (.getContextClassLoader thread))]
-        (doseq [^java.io.File d dirs]
-          (.addURL loader (.toURL (.toURI d))))
+        (doseq [^java.io.File f entries]
+          (.addURL loader (.toURL (.toURI f))))
         (.setContextClassLoader thread loader))))
   (dc/config lib))
 
@@ -109,7 +126,7 @@
    :history key, defaults to :user. Creates the parent dir if necessary."
   [lib config]
   (let [scope (if (= :project (:history config)) :project :user)
-        ^java.io.File f (dc/data-file scope lib "history")]
+        f (dc/data-file scope lib "history")]
     (.mkdirs (.getParentFile f))
     f))
 
