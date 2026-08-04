@@ -62,6 +62,14 @@ Use aliases `:clj-line/client` or `:clj-line/server` for more precise targeting.
 | `:middleware` | server | vector of qualified symbols | nREPL middleware.                      |
 | `:eval-hook` | server | qualified symbol | Wraps eval: `(f eval)` returns the eval fn.     |
 | `:port` | server | int | nREPL port (OS-assigned). |
+| `:print-length` | server | int | `*print-length*` (`nil`). |
+| `:print-level` | server | int | `*print-level*` (`nil`). |
+| `:print-meta` | server | boolean | `*print-meta*` (`false`). |
+| `:print-namespace-maps` | server | boolean | `*print-namespace-maps*` (`true`). |
+| `:warn-on-reflection` | server | boolean | `*warn-on-reflection*` (`false`). |
+| `:unchecked-math` | server | boolean or `:warn-on-boxed` | `*unchecked-math*` (`false`). |
+| `:assert` | server | boolean | `*assert*` (`true`). |
+| `:compile-path` | server | string | `*compile-path*` (`"classes"`). |
 
 ## Features
 
@@ -73,7 +81,7 @@ Use aliases `:clj-line/client` or `:clj-line/server` for more precise targeting.
 - [x] Emacs/Vim editing key commands
 - [x] Custom keybindings
 - [x] Auto require
-- [ ] Print var defaults (`*print-level*`, `*print-length*`, `*print-namespace-maps*`, etc)
+- [x] Print var defaults (`*print-level*`, `*print-length*`, `*print-namespace-maps*`, etc)
 - [ ] Customized exception printer function
 - [ ] Read, Eval, Print, Caught hooks
 - [ ] Bracket pairs & structural-editing
