@@ -61,6 +61,8 @@ Use aliases `:clj-line/client` or `:clj-line/server` for more precise targeting.
 | `:auto-require` | client | vector of libspecs | Required into each namespace. |
 | `:middleware` | server | vector of qualified symbols | nREPL middleware.                      |
 | `:eval-hook` | server | qualified symbol | Wraps eval: `(f eval)` returns the eval fn.     |
+| `:print-hook` | server | qualified symbol | Wraps result printing: `(f print)` returns a fn with signature `[value writer options]`. |
+| `:caught-hook` | server | qualified symbol | Wraps error reporting: `(f caught)` returns a fn with signature `[throwable]`. |
 | `:port` | server | int | nREPL port (OS-assigned). |
 | `:print-length` | server | int | `*print-length*` (`nil`). |
 | `:print-level` | server | int | `*print-level*` (`nil`). |
@@ -81,22 +83,18 @@ Use aliases `:clj-line/client` or `:clj-line/server` for more precise targeting.
 - [x] Emacs/Vim editing key commands
 - [x] Custom keybindings
 - [x] Auto require
-- [x] Print var defaults (`*print-level*`, `*print-length*`, `*print-namespace-maps*`, etc)
-- [ ] Customized exception printer function
-- [ ] Read, Eval, Print, Caught hooks
+- [x] Dynamic var config (`*print-level*`, `*print-length*`, `*warn-on-reflection*`, etc)
+- [x] Print and Caught hooks (Read is the client's parser, reachable via `:keybindings`)
 - [ ] Bracket pairs & structural-editing
 - [ ] Docs
-- [ ] Secondary prompt (format and content of continuation line, line numbers, colors)
-- [ ] Pretty-print toggle
-- [ ] Tap: (on/off, tap out text, filter pred)
-- [ ] Auto indent, column alignment (let columns and other things people align)
 - [ ] Inline tab completion of symbols (function or class)
+- [ ] Secondary prompt (format and content of continuation line, line numbers, colors)
+- [ ] Tap: (on/off, tap out text, filter pred)
 - [ ] REPL commands like :prompt (custom?)
 - [ ] Status line (on/off)
-- [ ] Input value coloring by type
-- [ ] Output value coloring by type
-- [ ] Indentation rules (basic alignment after each new bracket context)
-- [ ] Inline eval of form under cursor output to tap above
+- [ ] -Input value coloring by type-
+- [ ] -Output value coloring by type-
+- [x] Inline eval of form under cursor output to tap above (User space example)
 
 ## Tests
 

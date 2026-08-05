@@ -3,7 +3,7 @@
     [clojure.java.io :as io]
     [nrepl.config :as nrepl-config]
     [nrepl.server :as server]
-    [clj-line.server.eval-hook :as hook]))
+    [clj-line.server.hooks :as hooks]))
 
 (set! *warn-on-reflection* true)
 
@@ -25,13 +25,12 @@
              {}
              dynamic-vars))
 
-(defn start [{:keys [eval-hook middleware port] :as config}]
+(defn start [{:keys [middleware port] :as config}]
   (when-let [vars (not-empty (configured-dynamic-vars config))]
     (alter-var-root #'nrepl-config/config assoc :dynamic-vars vars))
-  (when eval-hook
-    (hook/install (requiring-resolve eval-hook)))
+  (hooks/install config)
   (let [extra (mapv requiring-resolve middleware)
-        handler (apply server/default-handler #'hook/middleware extra)
+        handler (apply server/default-handler #'hooks/middleware extra)
         srv (server/start-server :port (or port 0) :handler handler)]
     (spit ".nrepl-port" (str (:port srv)))
     srv))
