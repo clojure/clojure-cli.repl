@@ -11,7 +11,7 @@
 (defn complete?
   "True unless src needs more input to finish.
   Finished but invalid input returns true."
-  [^String src]
+  [src]
   (try
     (let [rdr (rt/indexing-push-back-reader src)]
       (loop []
@@ -24,7 +24,7 @@
 (defn read-all
   "Reads all top level forms from src into a vector. Read errors propagate
    to surface invalid input to the repl loop."
-  [^String src]
+  [src]
   (let [rdr (rt/indexing-push-back-reader src)]
     (loop [acc []]
       (let [form (r/read {:eof ::eof} rdr)]
@@ -35,7 +35,7 @@
    read multiple lines. Every other case, complete input, or any other context
    such as tab completion, falls through to DefaultParser."
   []
-  (let [^DefaultParser default (DefaultParser.)]
+  (let [default (DefaultParser.)]
     (proxy [DefaultParser] []
       (parse [line cursor context]
         (when (and (= context Parser$ParseContext/ACCEPT_LINE) (not (complete? line)))
@@ -62,34 +62,37 @@
   (let [nl (.indexOf src (int \newline) (int start))]
     (if (neg? nl) (.length src) nl)))
 
-(defn unmatched-brackets
-   "Returns the set of positions in src where a bracket ([{}]) has no partner.
-    Brackets inside strings, char literals, and comments are skipped."
+(def closer-of {\( \), \[ \], \{ \}})
+
+(defn bracket-scan
+  "Returns the open/close index of each matched bracket in :spans, innermost
+   first, and the index of each bracket with no partner under :unmatched.
+   Brackets inside strings and comments are not accounted for."
   [^String src]
-  (let [len (.length src)
-        closer-of {\( \), \[ \], \{ \}}]
-    (loop [pos 0, stack [], bad #{}]
+  (let [len (.length src)]
+    (loop [pos 0, stack [], spans [], bad #{}]
       (if (>= pos len)
-        (into bad (map first) stack)
+        {:spans spans :unmatched (into bad (map first) stack)}
         (let [c (.charAt src pos)]
           (cond
-            (= c \;)        (recur (skip-comment src pos) stack bad)
-            (= c \")        (recur (skip-string src pos) stack bad)
-            (= c \\)        (recur (long (min len (+ pos 2))) stack bad)
-            (#{\( \[ \{} c) (recur (inc pos) (conj stack [pos (closer-of c)]) bad)
-            (#{\) \] \}} c) (if (= c ^Character (second (peek stack)))
-                              (recur (inc pos) (pop stack) bad)
-                              (recur (inc pos) stack (conj bad pos)))
-            :else           (recur (inc pos) stack bad)))))))
+            (= c \;)        (recur (skip-comment src pos) stack spans bad)
+            (= c \")        (recur (skip-string src pos) stack spans bad)
+            (= c \\)        (recur (min len (+ pos 2)) stack spans bad)
+            (#{\( \[ \{} c) (recur (inc pos) (conj stack [pos (closer-of c)]) spans bad)
+            (#{\) \] \}} c) (let [[open closer] (peek stack)]
+                              (if (and closer (= c ^Character closer))
+                                (recur (inc pos) (pop stack) (conj spans [open (inc pos)]) bad)
+                                (recur (inc pos) stack spans (conj bad pos))))
+            :else           (recur (inc pos) stack spans bad)))))))
 
 (defn indent-column
-  "Number of spaces a continuation line should be indented so the cursor
-   sits one column past the last unclosed opener. Zero if the buffer
-   has no unclosed openers."
-  ^long [^String src]
-  (let [openers (filter #(#{\( \[ \{} (.charAt src ^long %)) (unmatched-brackets src))]
-    (if (empty? openers)
-      0
-      (let [innermost (long (apply max openers))
-            last-nl (.lastIndexOf src (int \newline) innermost)]
-        (- innermost last-nl)))))
+  "Spaces to indent a continuation line"
+  [^String src cursor]
+  (let [{:keys [spans unmatched]} (bracket-scan src)
+        enclosing (filter (fn [[open close]] (< open cursor close)) spans)
+        openers (filter #(#{\( \[ \{} (.charAt src %)) unmatched)
+        open (or (ffirst enclosing)
+                 (when (seq openers) (apply max openers)))]
+    (if open
+      (- open (.lastIndexOf src (int \newline) (int open)))
+      0)))

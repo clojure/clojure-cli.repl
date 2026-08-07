@@ -9,7 +9,7 @@
 (set! *warn-on-reflection* true)
 
 (defn highlight-clj [^String buffer]
-  (let [bad (reader/unmatched-brackets buffer)
+  (let [bad (:unmatched (reader/bracket-scan buffer))
         ^AttributedStyle bad-style (color/build-style {:fg :red :bold true})
         asb (AttributedStringBuilder.)]
     (dotimes [i (.length buffer)]

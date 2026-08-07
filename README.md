@@ -58,6 +58,7 @@ Use aliases `:clj-line/client` or `:clj-line/server` for more precise targeting.
 | `:editing-mode` | client | `:vi` | Vi keybindings (emacs). |
 | `:history` | client | `:project` or `:user` | History scope (`:user`).         |
 | `:keybindings` | client | qualified symbol | Fn `(f reader)` binding keys. |
+| `:bracket-pairs` | client | boolean | Auto close `[({` characters (`false`). |
 | `:auto-require` | client | vector of libspecs | Required into each namespace. |
 | `:middleware` | server | vector of qualified symbols | nREPL middleware.                      |
 | `:eval-hook` | server | qualified symbol | Wraps eval: `(f eval)` returns the eval fn.     |

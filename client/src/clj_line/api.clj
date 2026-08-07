@@ -61,7 +61,7 @@
 (defn widget
   "Reify a zero-arg fn as a JLine widget to use with `bind-key`.
   Any return value from the function is ignored."
-  ^Widget [f]
+  [f]
   (reify Widget (apply [_] (f) true)))
 
 (defn bind-key

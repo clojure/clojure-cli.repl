@@ -10,35 +10,89 @@
     [clj-line.color :as color])
   (:import
     [org.jline.terminal Terminal$Signal Terminal$SignalHandler TerminalBuilder]
-    [org.jline.reader LineReader LineReaderBuilder Reference Widget EndOfFileException UserInterruptException]
+    [org.jline.reader Buffer LineReader LineReaderBuilder Reference Widget EndOfFileException UserInterruptException]
     [org.jline.keymap KeyMap]))
 
 (set! *warn-on-reflection* true)
 
+(defn cursor-at-end?
+  "True when nothing other than possible whitespace follows the cursor in the buffer."
+  [^Buffer buf]
+  (str/blank? (subs (.toString buf) (.cursor buf))))
+
 (defn indent-or-accept
-  "Returns a JLine widget for the Enter key. A complete buffer gets submitted.
-   Otherwise it inserts a newline with enough spaces to align
-   the cursor one column past the last unclosed opener."
-  ^Widget [^LineReader rdr]
+  "Returns a JLine widget for the Enter key. A complete buffer gets submitted
+  otherwise write a new indented line. Paired braces always make a complete form
+  so if active submitting requires the cursor be at the end."
+  [^LineReader rdr paired?]
   (reify Widget
     (apply [_]
       (let [buf (.getBuffer rdr)
-            line (.toString buf)]
-        (if (reader/complete? line)
+            line (.toString buf)
+            ready-to-submit? (and (reader/complete? line)
+                                  (if paired? (cursor-at-end? buf) true))]
+        (if ready-to-submit?
           (.callWidget rdr "accept-line")
-          (.write buf (str "\n" (apply str (repeat (reader/indent-column line) \space))))))
+          (.write buf (str "\n" (apply str (repeat (reader/indent-column line (.cursor buf)) \space))))))
       true)))
 
 (defn eof-or-delete
   "Returns a JLine widget for ctrl-d that ends input on an empty line.
    JLine's default binding leaves no way to exit the repl."
-  ^Widget [^LineReader rdr]
+  [^LineReader rdr]
   (reify Widget
     (apply [_]
       (if (zero? (.length (.getBuffer rdr)))
         (throw (EndOfFileException.))
         (.callWidget rdr "delete-char"))
       true)))
+
+(defn insert-pair [^LineReader rdr open close]
+  (reify Widget
+    (apply [_]
+      (doto (.getBuffer rdr)
+        (.write (str open close))
+        (.move -1))
+      true)))
+
+(defn skip-or-insert
+  "Returns a JLine widget for a closing brace that advances the cursor if
+  the brace typed is the same."
+  [^LineReader rdr close]
+  (reify Widget
+    (apply [_]
+      (let [buf (.getBuffer rdr)]
+        (if (= (.currChar buf) (int close))
+          (.move buf 1)
+          (.write buf (str close))))
+      true)))
+
+(defn delete-pair
+  "Returns a JLine widget for backspace that removes both halves of an
+   empty pair of braces."
+  [^LineReader rdr]
+  (reify Widget
+    (apply [_]
+      (let [buf (.getBuffer rdr)
+            closer (reader/closer-of (char (.prevChar buf)))]
+        (when (and closer (= (int closer) (.currChar buf)))
+          (.delete buf))
+        (.backspace buf))
+      true)))
+
+(defn bind-pairs
+  "Bind each brace to its pairing widget in keymap."
+  [^LineReader rdr ^KeyMap keymap]
+  (let [widgets (.getWidgets rdr)]
+    (doseq [[open close] reader/closer-of
+            :let [open-name (str "insert-pair-" open)
+                  close-name (str "skip-or-insert-" close)]]
+      (.put widgets open-name (insert-pair rdr open close))
+      (.put widgets close-name (skip-or-insert rdr close))
+      (.bind keymap (Reference. open-name) (str open))
+      (.bind keymap (Reference. close-name) (str close)))
+    (.put widgets "delete-pair" (delete-pair rdr))
+    (.bind keymap (Reference. "delete-pair") (KeyMap/del))))
 
 (defn unbind-control-self-inserts
   "Unbind control keys that insert a literal control char.
@@ -50,7 +104,7 @@
             :when (= self-insert (.getBound keymap k))]
       (.unbind keymap k))))
 
-(defn build-reader ^LineReader [^java.io.File history-file editing-mode]
+(defn build-reader ^LineReader [{:keys [editing-mode bracket-pairs]} history-file]
   (let [terminal (-> (TerminalBuilder/builder)
                      (.system true)
                      (.ffm false)
@@ -60,17 +114,18 @@
                      (.terminal terminal)
                      (.parser (reader/clojure-parser))
                      (.highlighter (highlight/clojure-highlighter))
-                     (.variable LineReader/SECONDARY_PROMPT_PATTERN "%N%P > ")
+                     (.variable LineReader/SECONDARY_PROMPT_PATTERN "%P ")
                      (.variable LineReader/HISTORY_FILE history-file)
                      .build)
         vi? (= :vi editing-mode)
         keymaps (.getKeyMaps rdr)]
-    (.put (.getWidgets rdr) "indent-or-accept" (indent-or-accept rdr))
+    (.put (.getWidgets rdr) "indent-or-accept" (indent-or-accept rdr bracket-pairs))
     (.put (.getWidgets rdr) "eof-or-delete" (eof-or-delete rdr))
     (doseq [keymap-name (if vi? [LineReader/VIINS LineReader/VICMD] [LineReader/MAIN])]
       (let [^KeyMap keymap (.get keymaps keymap-name)]
         (.bind keymap (Reference. "indent-or-accept") "\r")
-        (.bind keymap (Reference. "eof-or-delete") (KeyMap/ctrl \D))))
+        (.bind keymap (Reference. "eof-or-delete") (KeyMap/ctrl \D))
+        (when bracket-pairs (bind-pairs rdr keymap))))
     (when vi?
       (.put keymaps LineReader/MAIN (.get keymaps LineReader/VIINS)) ;; `main` is each line's starting keymap defaulted to emacs
       (unbind-control-self-inserts (.get keymaps LineReader/VIINS)))
@@ -161,7 +216,7 @@
         port (Integer/parseInt (str/trim (or (first args) (slurp ".nrepl-port"))))
         {:keys [session]} (nrepl/connect port)
         libspecs (:auto-require config)
-        rdr (build-reader (history-file 'org.clojure/clj-line config) (:editing-mode config))]
+        rdr (build-reader config (history-file 'org.clojure/clj-line config))]
     (reset! api/reader rdr)
     (reset! api/session session)
     (apply-keybindings config rdr)

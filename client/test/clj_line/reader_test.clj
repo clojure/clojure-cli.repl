@@ -43,44 +43,60 @@
   (testing "returns len for an unterminated string"
     (is (= 4 (sut/skip-string "\"abc" 0)))))
 
-(deftest unmatched-brackets-test
+(deftest bracket-scan-unmatched-test
   (testing "balanced inputs have no bad brackets"
-    (is (= #{} (sut/unmatched-brackets "")))
-    (is (= #{} (sut/unmatched-brackets "(foo)")))
-    (is (= #{} (sut/unmatched-brackets "[1 2 3]")))
-    (is (= #{} (sut/unmatched-brackets "{:a 1}")))
-    (is (= #{} (sut/unmatched-brackets "(let [x 1] (* x 2))"))))
+    (is (= #{} (:unmatched (sut/bracket-scan ""))))
+    (is (= #{} (:unmatched (sut/bracket-scan "(foo)"))))
+    (is (= #{} (:unmatched (sut/bracket-scan "[1 2 3]"))))
+    (is (= #{} (:unmatched (sut/bracket-scan "{:a 1}"))))
+    (is (= #{} (:unmatched (sut/bracket-scan "(let [x 1] (* x 2))")))))
   (testing "unclosed openers are flagged at their position"
-    (is (= #{0} (sut/unmatched-brackets "(")))
-    (is (= #{0} (sut/unmatched-brackets "(foo")))
-    (is (= #{0 11} (sut/unmatched-brackets "(let [x 1] (foo"))))
+    (is (= #{0} (:unmatched (sut/bracket-scan "("))))
+    (is (= #{0} (:unmatched (sut/bracket-scan "(foo"))))
+    (is (= #{0 11} (:unmatched (sut/bracket-scan "(let [x 1] (foo")))))
   (testing "stray closers are flagged"
-    (is (= #{0} (sut/unmatched-brackets ")")))
-    (is (= #{4} (sut/unmatched-brackets "(a) ]"))))
+    (is (= #{0} (:unmatched (sut/bracket-scan ")"))))
+    (is (= #{4} (:unmatched (sut/bracket-scan "(a) ]")))))
   (testing "mismatched type flags both open and close"
-    (is (= #{0 2} (sut/unmatched-brackets "(a]"))))
+    (is (= #{0 2} (:unmatched (sut/bracket-scan "(a]")))))
   (testing "brackets inside strings are ignored"
-    (is (= #{} (sut/unmatched-brackets "\"(\""))))
+    (is (= #{} (:unmatched (sut/bracket-scan "\"(\"")))))
   (testing "char literal consumes its char"
-    (is (= #{} (sut/unmatched-brackets "\\(")))
-    (is (= #{} (sut/unmatched-brackets "\\)")))
-    (is (= #{2} (sut/unmatched-brackets "\\;)"))))
+    (is (= #{} (:unmatched (sut/bracket-scan "\\("))))
+    (is (= #{} (:unmatched (sut/bracket-scan "\\)"))))
+    (is (= #{2} (:unmatched (sut/bracket-scan "\\;)")))))
   (testing "brackets after comments are ignored"
-    (is (= #{} (sut/unmatched-brackets ";("))))
+    (is (= #{} (:unmatched (sut/bracket-scan ";(")))))
   (testing "brackets in regex are ignored"
-    (is (= #{} (sut/unmatched-brackets "#\"(\"")))))
+    (is (= #{} (:unmatched (sut/bracket-scan "#\"(\""))))))
+
+(deftest bracket-scan-spans-test
+  (testing "spans for each matched pair"
+    (is (= [] (:spans (sut/bracket-scan ""))))
+    (is (= [[0 5]] (:spans (sut/bracket-scan "(foo)"))))
+    (is (= [[5 10] [11 18] [0 19]] (:spans (sut/bracket-scan "(let [x 1] (+ x 2))")))))
+  (testing "unmatched brackets have no span"
+    (is (= [] (:spans (sut/bracket-scan "(foo"))))
+    (is (= [] (:spans (sut/bracket-scan "(a]")))))
+  (testing " strings and comments do not gen create spans"
+    (is (= [] (:spans (sut/bracket-scan "\"(\""))))
+    (is (= [] (:spans (sut/bracket-scan ";("))))))
 
 (deftest indent-column-test
-  (testing "balanced inputs return zero"
-    (is (= 0 (sut/indent-column "")))
-    (is (= 0 (sut/indent-column "(foo)")))
-    (is (= 0 (sut/indent-column "[1 2 3]"))))
-  (testing "single unclosed opener at start of buffer"
-    (is (= 1 (sut/indent-column "(foo")))
-    (is (= 1 (sut/indent-column "[1 2 3"))))
-  (testing "unclosed opener with leading content"
-    (is (= 4 (sut/indent-column "abc(def"))))
-  (testing "nested openers indent to the innermost"
-    (is (= 12 (sut/indent-column "(let [x 1] (foo"))))
+  (testing "cursor not in form"
+    (is (= 0 (sut/indent-column "" 0)))
+    (is (= 0 (sut/indent-column "(foo)" 5)))
+    (is (= 0 (sut/indent-column "[1 2 3]" 7))))
+  (testing "cursor at the end of unclosed line"
+    (is (= 1 (sut/indent-column "(foo" 4)))
+    (is (= 1 (sut/indent-column "[1 2 3" 6)))
+    (is (= 4 (sut/indent-column "abc(def" 7)))
+    (is (= 12 (sut/indent-column "(let [x 1] (foo" 15))))
+  (testing "paired mode curosr inside a balanced form"
+    (is (= 1 (sut/indent-column "(+ 5 6)" 6)))
+    (is (= 6 (sut/indent-column "(let [y 7])" 9)))
+    (is (= 1 (sut/indent-column "(let [y 7])" 10))))
+  (testing "cursor beyond balanced for does not indent"
+    (is (= 1 (sut/indent-column "(foo (bar)" 10))))
   (testing "indent is relative to the current line"
-    (is (= 2 (sut/indent-column "(let\n (foo")))))
+    (is (= 2 (sut/indent-column "(let\n (foo" 10)))))
