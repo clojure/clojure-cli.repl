@@ -100,3 +100,14 @@
     (is (= 1 (sut/indent-column "(foo (bar)" 10))))
   (testing "indent is relative to the current line"
     (is (= 2 (sut/indent-column "(let\n (foo" 10)))))
+
+(deftest form-at-cursor-test
+  (testing "innermost form the cursor is in"
+    (is (= "(bar)" (sut/form-at-cursor "(foo (bar) baz)" 6)))
+    (is (= "(foo (bar) baz)" (sut/form-at-cursor "(foo (bar) baz)" 1))))
+  (testing "a complete buffer with no brackets"
+    (is (= "foo" (sut/form-at-cursor "foo" 1))))
+  (testing "unbalanced input"
+    (is (= "(bar)" (sut/form-at-cursor "(foo (bar)" 6))))
+  (testing "nothing complete at the cursor"
+    (is (nil? (sut/form-at-cursor "(foo (bar)" 1)))))

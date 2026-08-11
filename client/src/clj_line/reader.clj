@@ -59,7 +59,7 @@
   "Given the index of the ; in src, returns the index of
    the newline, or src length if no newline."
   ^long [^String src start]
-  (let [nl (.indexOf src (int \newline) (int start))]
+  (let [nl (.indexOf src "\n" (int start))]
     (if (neg? nl) (.length src) nl)))
 
 (def closer-of {\( \), \[ \], \{ \}})
@@ -85,6 +85,15 @@
                                 (recur (inc pos) stack spans (conj bad pos))))
             :else           (recur (inc pos) stack spans bad)))))))
 
+(defn form-at-cursor
+  "The innermost complete form the cursor is in, the whole buffer when it is
+   itself complete, nil when neither."
+  [src cursor]
+  (or (some (fn [[open close]]
+              (when (<= open cursor close) (subs src open close)))
+            (:spans (bracket-scan src)))
+      (when (complete? src) src)))
+
 (defn indent-column
   "Spaces to indent a continuation line"
   [^String src cursor]
@@ -94,5 +103,5 @@
         open (or (ffirst enclosing)
                  (when (seq openers) (apply max openers)))]
     (if open
-      (- open (.lastIndexOf src (int \newline) (int open)))
+      (- open (.lastIndexOf src "\n" (int open)))
       0)))

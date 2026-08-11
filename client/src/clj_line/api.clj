@@ -64,6 +64,15 @@
   [f]
   (reify Widget (apply [_] (f) true)))
 
+(defn key-sequence
+  "M-r is alt-r, C-e is ctrl-e, TAB and RET name themselves, anything else is literal."
+  [s]
+  (if-let [[_ modifier ^String key-name] (re-matches #"([MC])-(.+)" s)]
+    (case modifier
+      "M" (KeyMap/alt key-name)
+      "C" (KeyMap/ctrl (.charAt key-name 0)))
+    (case s "TAB" "\t" "RET" "\r" s)))
+
 (defn bind-key
   "Run `widget` when `keyseq` is typed. `keyseq` is the raw characters the
   terminal sends for a key. A plain string for simple keys,

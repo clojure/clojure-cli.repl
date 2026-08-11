@@ -5,6 +5,7 @@
     [clojure.tools.deps.config :as dc]
     [clj-line.client.nrepl :as nrepl]
     [clj-line.api :as api]
+    [clj-line.paredit :as paredit]
     [clj-line.reader :as reader]
     [clj-line.highlight :as highlight]
     [clj-line.color :as color])
@@ -185,6 +186,18 @@
     (.mkdirs (.getParentFile f))
     f))
 
+(defn eval-form
+  "Widget evaluating the form at the cursor and printing the value above the prompt.
+  User configurable under :eval-form-at-cursor"
+  [^LineReader rdr]
+  (api/widget
+    (fn []
+      (let [buf (.getBuffer rdr)]
+        (when-let [code (reader/form-at-cursor (.toString buf) (.cursor buf))]
+          (let [{:keys [value err]} (api/eval-code code)]
+            (api/print-above [{:text (str "=> " (or err value) "\n")
+                               :style {:fg :bright-black}}])))))))
+
 (defn apply-keybindings
   [config reader]
   (when-let [keybindings (:keybindings config)]
@@ -219,6 +232,9 @@
         rdr (build-reader config (history-file 'org.clojure/clj-line config))]
     (reset! api/reader rdr)
     (reset! api/session session)
+    (when-let [keyseq (:eval-form-at-cursor config)]
+      (api/bind-key rdr (api/key-sequence keyseq) (eval-form rdr)))
+    (paredit/install config rdr)
     (apply-keybindings config rdr)
     ;; ctrl-c during an eval outside of .readLine needs to interrupt the server
     (.handle (.getTerminal rdr) Terminal$Signal/INT

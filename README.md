@@ -59,6 +59,8 @@ Use aliases `:clj-line/client` or `:clj-line/server` for more precise targeting.
 | `:history` | client | `:project` or `:user` | History scope (`:user`).         |
 | `:keybindings` | client | qualified symbol | Fn `(f reader)` binding keys. |
 | `:bracket-pairs` | client | boolean | Auto close `[({` characters (`false`). |
+| `:eval-form-at-cursor` | client | key string | Eval the form at the cursor printing result above the prompt. |
+| `:paredit/<op>` | client | key string | Bind a structural editing op. Example: `:paredit/raise "M-r"`. |
 | `:auto-require` | client | vector of libspecs | Required into each namespace. |
 | `:middleware` | server | vector of qualified symbols | nREPL middleware.                      |
 | `:eval-hook` | server | qualified symbol | Wraps eval: `(f eval)` returns the eval fn.     |
@@ -74,6 +76,17 @@ Use aliases `:clj-line/client` or `:clj-line/server` for more precise targeting.
 | `:assert` | server | boolean | `*assert*` (`true`). |
 | `:compile-path` | server | string | `*compile-path*` (`"classes"`). |
 
+Key strings: `M-x` is alt-x, `C-x` is ctrl-x, `TAB` and `RET` name themselves,
+anything else is the literal char.
+
+Paredit ops: `:paredit/slurp-forward` `:paredit/slurp-forward-fully`
+`:paredit/slurp-backward` `:paredit/slurp-backward-fully`
+`:paredit/barf-forward` `:paredit/barf-backward` `:paredit/splice`
+`:paredit/splice-killing-forward` `:paredit/splice-killing-backward`
+`:paredit/raise` `:paredit/kill` `:paredit/split` `:paredit/join`
+`:paredit/move-to-prev` `:paredit/wrap-list` `:paredit/wrap-vector`
+`:paredit/wrap-map` `:paredit/wrap-set`
+
 ## Features
 
 - [x] Multiple lines that are properly indented
@@ -86,16 +99,16 @@ Use aliases `:clj-line/client` or `:clj-line/server` for more precise targeting.
 - [x] Auto require
 - [x] Dynamic var config (`*print-level*`, `*print-length*`, `*warn-on-reflection*`, etc)
 - [x] Print and Caught hooks (Read is the client's parser, reachable via `:keybindings`)
-- [ ] Bracket pairs & structural-editing
+- [x] Bracket pairs & structural-editing
+- [x] Inline eval of form at cursor output above the prompt
 - [ ] Docs
 - [ ] Inline tab completion of symbols (function or class)
-- [ ] Secondary prompt (format and content of continuation line, line numbers, colors)
 - [ ] Tap: (on/off, tap out text, filter pred)
 - [ ] REPL commands like :prompt (custom?)
 - [ ] Status line (on/off)
+- [ ] -Secondary prompt (format and content of continuation line, line numbers, colors)-
 - [ ] -Input value coloring by type-
 - [ ] -Output value coloring by type-
-- [x] Inline eval of form under cursor output to tap above (User space example)
 
 ## Tests
 
