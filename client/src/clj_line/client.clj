@@ -1,9 +1,9 @@
-(ns clj-line.client.main
+(ns clj-line.client
   (:require
     [clojure.java.shell :as sh]
     [clojure.string :as str]
     [clojure.tools.deps.config :as dc]
-    [clj-line.client.nrepl :as nrepl]
+    [clj-line.nrepl :as nrepl]
     [clj-line.api :as api]
     [clj-line.paredit :as paredit]
     [clj-line.reader :as reader]
@@ -195,7 +195,7 @@
       (let [buf (.getBuffer rdr)]
         (when-let [code (reader/form-at-cursor (.toString buf) (.cursor buf))]
           (let [{:keys [value err]} (api/eval-code code)]
-            (api/print-above [{:text (str "=> " (or err value) "\n")
+            (api/print-above [{:text (str "=> " (or value err) "\n")
                                :style {:fg :bright-black}}])))))))
 
 (defn apply-keybindings

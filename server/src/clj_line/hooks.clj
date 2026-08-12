@@ -1,4 +1,4 @@
-(ns clj-line.server.hooks
+(ns clj-line.hooks
   (:require
     [clojure.main :as main]
     [nrepl.middleware :refer [set-descriptor!]]

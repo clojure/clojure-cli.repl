@@ -1,4 +1,4 @@
-(ns clj-line.client.nrepl
+(ns clj-line.nrepl
   (:require
     [nrepl.core :as nrepl]))
 

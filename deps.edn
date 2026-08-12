@@ -3,17 +3,17 @@
   :serve
   {:replace-paths []
    :replace-deps {clj-line/server {:local/root "server"}}
-   :main-opts ["-m" "clj-line.server.main"]}
+   :main-opts ["-m" "clj-line.server"]}
 
   ;; terminal client
   :attach
   {:replace-paths []
    :replace-deps {clj-line/client {:local/root "client"}}
-   :main-opts ["-m" "clj-line.client.main"]}
+   :main-opts ["-m" "clj-line.client"]}
 
   ;; terminal repl
   ;; After the server starts the client gets spawned
   :repl
   {:replace-paths []
    :replace-deps {clj-line/server {:local/root "server"}}
-   :main-opts ["-m" "clj-line.server.main" "repl"]}}}
+   :main-opts ["-m" "clj-line.server" "repl"]}}}

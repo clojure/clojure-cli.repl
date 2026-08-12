@@ -10,13 +10,13 @@ Until it's released, add these aliases to your user `deps.edn` to run locally:
 
 ```clojure
 {:aliases
- {:repl   {:replace-paths [] :main-opts ["-m" "clj-line.server.main" "repl"]
+ {:repl   {:replace-paths [] :main-opts ["-m" "clj-line.server" "repl"]
            :replace-deps {clj-line/server {:git/url "https://codeberg.org/JarrodCTaylor/clj-line.git"
                                             :git/sha "030b2c41aaa4574e9bb9970bfe4273fe667f9484" :deps/root "server"}}}
-  :attach {:replace-paths [] :main-opts ["-m" "clj-line.client.main"]
+  :attach {:replace-paths [] :main-opts ["-m" "clj-line.client"]
            :replace-deps {clj-line/client {:git/url "https://codeberg.org/JarrodCTaylor/clj-line.git"
                                             :git/sha "030b2c41aaa4574e9bb9970bfe4273fe667f9484" :deps/root "client"}}}
-  :serve  {:replace-paths [] :main-opts ["-m" "clj-line.server.main"]
+  :serve  {:replace-paths [] :main-opts ["-m" "clj-line.server"]
            :replace-deps {clj-line/server {:git/url "https://codeberg.org/JarrodCTaylor/clj-line.git"
                                             :git/sha "030b2c41aaa4574e9bb9970bfe4273fe667f9484" :deps/root "server"}}}}}
 ```
