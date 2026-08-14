@@ -33,12 +33,12 @@ The root `deps.edn` aliases compose the classpath for each process:
 
 A flat EDN map, merged from a user file and overridable with a project file:
 
-* user: `~/.clojure/.cli-config/org.clojure/clj-line.edn`
-* project: `.cli-config/org.clojure/clj-line.edn`, in the project dir
+* user: `~/.clojure/.cljconf/org.clojure/clj-line.edn`
+* project: `.cljconf/org.clojure/clj-line.edn`, in the project dir
 
 Options whose value is a symbol point to user provided code, loaded
 from a `src` dir next to the config. For example,
-`my-prompt/prompt` is loaded from `.cli-config/org.clojure/clj-line/src/my_prompt.clj`.
+`my-prompt/prompt` is loaded from `.cljconf/org.clojure/clj-line/src/my_prompt.clj`.
 
 A `deps.edn` in the config dir puts that code and its libraries on the
 classpath. Items in `:deps` are included in both processes.

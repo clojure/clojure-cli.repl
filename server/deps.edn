@@ -1,4 +1,4 @@
 {:paths ["src"]
  :deps {org.clojure/clojure           {:mvn/version "1.12.5"}
-        org.clojure/tools.deps.config {:mvn/version "0.1.4"}
+        org.clojure/tools.deps.config {:mvn/version "0.1.5"}
         nrepl/nrepl                   {:mvn/version "1.7.0"}}}

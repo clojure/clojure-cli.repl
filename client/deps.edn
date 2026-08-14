@@ -1,7 +1,7 @@
 {:paths ["src"]
  :deps {org.clojure/clojure           {:mvn/version "1.12.5"}
         org.clojure/tools.reader      {:mvn/version "1.6.0"}
-        org.clojure/tools.deps.config {:mvn/version "0.1.4"}
+        org.clojure/tools.deps.config {:mvn/version "0.1.5"}
         org.jline/jline               {:mvn/version "4.3.1"}
         rewrite-clj/rewrite-clj       {:mvn/version "1.2.54"}
         nrepl/nrepl                   {:mvn/version "1.7.0"}}
