@@ -2,18 +2,18 @@
  {;; nREPL server
   :serve
   {:replace-paths []
-   :replace-deps {clj-line/server {:local/root "server"}}
-   :main-opts ["-m" "clj-line.server"]}
+   :replace-deps {clojure-cli.repl/server {:local/root "server"}}
+   :main-opts ["-m" "clojure-cli.repl.server"]}
 
   ;; terminal client
   :attach
   {:replace-paths []
-   :replace-deps {clj-line/client {:local/root "client"}}
-   :main-opts ["-m" "clj-line.client"]}
+   :replace-deps {clojure-cli.repl/client {:local/root "client"}}
+   :main-opts ["-m" "clojure-cli.repl.client"]}
 
   ;; terminal repl
   ;; After the server starts the client gets spawned
   :repl
   {:replace-paths []
-   :replace-deps {clj-line/server {:local/root "server"}}
-   :main-opts ["-m" "clj-line.server" "repl"]}}}
+   :replace-deps {clojure-cli.repl/server {:local/root "server"}}
+   :main-opts ["-m" "clojure-cli.repl.server" "repl"]}}}

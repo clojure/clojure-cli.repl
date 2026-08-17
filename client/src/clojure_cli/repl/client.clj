@@ -1,14 +1,14 @@
-(ns clj-line.client
+(ns clojure-cli.repl.client
   (:require
     [clojure.java.shell :as sh]
     [clojure.string :as str]
     [clojure.tools.deps.config :as dc]
-    [clj-line.nrepl :as nrepl]
-    [clj-line.api :as api]
-    [clj-line.paredit :as paredit]
-    [clj-line.reader :as reader]
-    [clj-line.highlight :as highlight]
-    [clj-line.color :as color])
+    [clojure-cli.repl.nrepl :as nrepl]
+    [clojure-cli.repl.api :as api]
+    [clojure-cli.repl.paredit :as paredit]
+    [clojure-cli.repl.reader :as reader]
+    [clojure-cli.repl.highlight :as highlight]
+    [clojure-cli.repl.color :as color])
   (:import
     [org.jline.terminal Terminal$Signal Terminal$SignalHandler TerminalBuilder]
     [org.jline.reader Buffer LineReader LineReaderBuilder Reference Widget EndOfFileException UserInterruptException]
@@ -139,7 +139,7 @@
 (defn resolve-prompt [config]
   (if-let [prompt (:prompt config)]
     (or (requiring-resolve prompt)
-        (throw (ex-info (str "clj-line: :prompt var not found: " prompt) {:prompt prompt})))
+        (throw (ex-info (str "clojure-cli.repl: :prompt var not found: " prompt) {:prompt prompt})))
     default-prompt))
 
 (defn render-prompt ^String [prompt-fn]
@@ -150,10 +150,10 @@
   [location lib]
   (when (.isFile (dc/data-file location lib "deps.edn"))
     (let [dir (dc/data-dir location lib)
-          {:keys [exit out err]} (sh/sh "clojure" "-Srepro" "-A:clj-line/client" "-Spath" :dir (str dir))]
+          {:keys [exit out err]} (sh/sh "clojure" "-Srepro" "-A:clojure-cli.repl/client" "-Spath" :dir (str dir))]
       (if (zero? exit)
         (str/trim out)
-        (println "clj-line: could not resolve deps.edn in" (str dir) "-" (str/trim err))))))
+        (println "clojure-cli.repl: could not resolve deps.edn in" (str dir) "-" (str/trim err))))))
 
 (defn classpath-files [^java.io.File dir ^String cp]
   (map #(.toFile (.resolve (.toPath dir) ^String %))
@@ -203,7 +203,7 @@
   (when-let [keybindings (:keybindings config)]
     (if-let [f (requiring-resolve keybindings)]
       (f reader)
-      (throw (ex-info (str "clj-line: :keybindings var not found: " keybindings) {:keybindings keybindings})))))
+      (throw (ex-info (str "clojure-cli.repl: :keybindings var not found: " keybindings) {:keybindings keybindings})))))
 
 (defn auto-require-code
   "Returns code that requires libspecs into the current namespace.
@@ -221,15 +221,15 @@
   (when (seq libspecs)
     (let [{:keys [ex err]} (nrepl/eval-quiet session (auto-require-code libspecs))]
       (when ex
-        (println "clj-line: :auto-require failed:" (str/trim (or err ex)))))))
+        (println "clojure-cli.repl: :auto-require failed:" (str/trim (or err ex)))))))
 
 (defn -main [& args]
-  (let [config (load-config 'org.clojure/clj-line)
+  (let [config (load-config 'org.clojure/clojure-cli.repl)
         prompt-fn (resolve-prompt config)
         port (Integer/parseInt (str/trim (or (first args) (slurp ".nrepl-port"))))
         {:keys [session]} (nrepl/connect port)
         libspecs (:auto-require config)
-        rdr (build-reader config (history-file 'org.clojure/clj-line config))]
+        rdr (build-reader config (history-file 'org.clojure/clojure-cli.repl config))]
     (reset! api/reader rdr)
     (reset! api/session session)
     (when-let [keyseq (:eval-form-at-cursor config)]

@@ -1,4 +1,4 @@
-(ns clj-line.server
+(ns clojure-cli.repl.server
   (:require
     [clojure.java.io :as io]
     [clojure.java.shell :as sh]
@@ -6,7 +6,7 @@
     [clojure.tools.deps.config :as dc]
     [nrepl.config :as nrepl-config]
     [nrepl.server :as server]
-    [clj-line.hooks :as hooks]))
+    [clojure-cli.repl.hooks :as hooks]))
 
 (set! *warn-on-reflection* true)
 
@@ -47,10 +47,10 @@
   [location lib]
   (when (.isFile (dc/data-file location lib "deps.edn"))
     (let [dir (dc/data-dir location lib)
-          {:keys [exit out err]} (sh/sh "clojure" "-Srepro" "-A:clj-line/server" "-Spath" :dir (str dir))]
+          {:keys [exit out err]} (sh/sh "clojure" "-Srepro" "-A:clojure-cli.repl/server" "-Spath" :dir (str dir))]
       (if (zero? exit)
         (str/trim out)
-        (println "clj-line: could not resolve deps.edn in" (str dir) "-" (str/trim err))))))
+        (println "clojure-cli.repl: could not resolve deps.edn in" (str dir) "-" (str/trim err))))))
 
 (defn classpath-files [^java.io.File dir ^String cp]
   (map #(.toFile (.resolve (.toPath dir) ^String %))
@@ -94,7 +94,7 @@
         .start)))
 
 (defn -main [& args]
-  (let [srv (start (load-config 'org.clojure/clj-line))]
+  (let [srv (start (load-config 'org.clojure/clojure-cli.repl))]
     (.addShutdownHook (Runtime/getRuntime)
                       (Thread. ^Runnable (fn [] (stop srv)))) ;; on shutdown remove .nrepl-port
     (println "nREPL server listening on port" (:port srv))

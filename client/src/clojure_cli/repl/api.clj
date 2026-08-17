@@ -1,7 +1,7 @@
-(ns clj-line.api
-  "Access to the running clj-line REPL's line reader and terminal."
+(ns clojure-cli.repl.api
+  "Access to the running clojure-cli.repl REPL's line reader and terminal."
   (:require
-    [clj-line.color :as color]
+    [clojure-cli.repl.color :as color]
     [nrepl.core :as nrepl])
   (:import
     [org.jline.keymap KeyMap]

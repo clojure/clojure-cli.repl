@@ -1,6 +1,6 @@
-(ns clj-line.paredit
+(ns clojure-cli.repl.paredit
   (:require
-    [clj-line.api :as api]
+    [clojure-cli.repl.api :as api]
     [clojure.string :as str]
     [rewrite-clj.paredit :as pe]
     [rewrite-clj.zip :as z])

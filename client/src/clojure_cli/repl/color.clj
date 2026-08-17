@@ -1,4 +1,4 @@
-(ns clj-line.color
+(ns clojure-cli.repl.color
   (:import
     [org.jline.utils AttributedString AttributedStringBuilder AttributedStyle]))
 

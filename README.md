@@ -1,6 +1,6 @@
-# clj-line
+# clojure-cli.repl
 
-clj-line runs as two processes. An nREPL server that evaluates code,
+clojure-cli.repl runs as two processes. An nREPL server that evaluates code,
 and a JLine client that provides a terminal prompt. Keeping them
 separate keeps the client dependencies off the project classpath.
 
@@ -10,14 +10,14 @@ Until it's released, add these aliases to your user `deps.edn` to run locally:
 
 ```clojure
 {:aliases
- {:repl   {:replace-paths [] :main-opts ["-m" "clj-line.server" "repl"]
            :replace-deps {clj-line/server {:git/url "https://codeberg.org/JarrodCTaylor/clj-line.git"
+ {:repl   {:replace-paths [] :main-opts ["-m" "clojure-cli.repl.server" "repl"]
                                             :git/sha "030b2c41aaa4574e9bb9970bfe4273fe667f9484" :deps/root "server"}}}
-  :attach {:replace-paths [] :main-opts ["-m" "clj-line.client"]
            :replace-deps {clj-line/client {:git/url "https://codeberg.org/JarrodCTaylor/clj-line.git"
+  :attach {:replace-paths [] :main-opts ["-m" "clojure-cli.repl.client"]
                                             :git/sha "030b2c41aaa4574e9bb9970bfe4273fe667f9484" :deps/root "client"}}}
-  :serve  {:replace-paths [] :main-opts ["-m" "clj-line.server"]
            :replace-deps {clj-line/server {:git/url "https://codeberg.org/JarrodCTaylor/clj-line.git"
+  :serve  {:replace-paths [] :main-opts ["-m" "clojure-cli.repl.server"]
                                             :git/sha "030b2c41aaa4574e9bb9970bfe4273fe667f9484" :deps/root "server"}}}}}
 ```
 
@@ -33,22 +33,22 @@ The root `deps.edn` aliases compose the classpath for each process:
 
 A flat EDN map, merged from a user file and overridable with a project file:
 
-* user: `~/.clojure/.cljconf/org.clojure/clj-line.edn`
-* project: `.cljconf/org.clojure/clj-line.edn`, in the project dir
+* user: `~/.clojure/.cljconf/org.clojure/clojure-cli.repl.edn`
+* project: `.cljconf/org.clojure/clojure-cli.repl.edn`, in the project dir
 
 Options whose value is a symbol point to user provided code, loaded
 from a `src` dir next to the config. For example,
-`my-prompt/prompt` is loaded from `.cljconf/org.clojure/clj-line/src/my_prompt.clj`.
+`my-prompt/prompt` is loaded from `.cljconf/org.clojure/clojure-cli.repl/src/my_prompt.clj`.
 
 A `deps.edn` in the config dir puts that code and its libraries on the
 classpath. Items in `:deps` are included in both processes.
-Use aliases `:clj-line/client` or `:clj-line/server` for more precise targeting.
+Use aliases `:clojure-cli.repl/client` or `:clojure-cli.repl/server` for more precise targeting.
 
 ```clojure
 {:paths ["src"]
  :deps  {org.clojure/data.json {:mvn/version "2.5.2"}}          ; included in both client and server
- :aliases {:clj-line/client {:extra-deps {...}}                 ; prompts, keybindings
-           :clj-line/server {:extra-deps {criterium/criterium {:mvn/version "0.4.6"}}}}}
+ :aliases {:clojure-cli.repl/client {:extra-deps {...}}                 ; prompts, keybindings
+           :clojure-cli.repl/server {:extra-deps {criterium/criterium {:mvn/version "0.4.6"}}}}}
 ```
 
 

@@ -1,4 +1,4 @@
-(ns clj-line.reader
+(ns clojure-cli.repl.reader
   (:require
     [clojure.tools.reader :as r]
     [clojure.tools.reader.reader-types :as rt])

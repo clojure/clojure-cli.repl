@@ -1,4 +1,4 @@
-(ns clj-line.nrepl
+(ns clojure-cli.repl.nrepl
   (:require
     [nrepl.core :as nrepl]))
 

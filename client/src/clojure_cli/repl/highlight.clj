@@ -1,7 +1,7 @@
-(ns clj-line.highlight
+(ns clojure-cli.repl.highlight
   (:require
-    [clj-line.color :as color]
-    [clj-line.reader :as reader])
+    [clojure-cli.repl.color :as color]
+    [clojure-cli.repl.reader :as reader])
   (:import
     [org.jline.reader Highlighter]
     [org.jline.utils AttributedStringBuilder AttributedStyle]))

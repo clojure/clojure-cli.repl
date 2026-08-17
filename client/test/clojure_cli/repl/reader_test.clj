@@ -1,7 +1,7 @@
-(ns clj-line.reader-test
+(ns clojure-cli.repl.reader-test
   (:require
     [clojure.test :refer [deftest is testing]]
-    [clj-line.reader :as sut]))
+    [clojure-cli.repl.reader :as sut]))
 
 (deftest complete?-test
   (testing "closed forms are complete"
