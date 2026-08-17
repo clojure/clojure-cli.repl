@@ -10,15 +10,15 @@ Until it's released, add these aliases to your user `deps.edn` to run locally:
 
 ```clojure
 {:aliases
-           :replace-deps {clj-line/server {:git/url "https://codeberg.org/JarrodCTaylor/clj-line.git"
  {:repl   {:replace-paths [] :main-opts ["-m" "clojure-cli.repl.server" "repl"]
-                                            :git/sha "030b2c41aaa4574e9bb9970bfe4273fe667f9484" :deps/root "server"}}}
-           :replace-deps {clj-line/client {:git/url "https://codeberg.org/JarrodCTaylor/clj-line.git"
+           :replace-deps {clojure-cli.repl/server {:git/url "https://codeberg.org/JarrodCTaylor/clj-line.git"
+                                            :git/sha "edfcf8995f43be7ee41114935673bcd87ae217db" :deps/root "server"}}}
   :attach {:replace-paths [] :main-opts ["-m" "clojure-cli.repl.client"]
-                                            :git/sha "030b2c41aaa4574e9bb9970bfe4273fe667f9484" :deps/root "client"}}}
-           :replace-deps {clj-line/server {:git/url "https://codeberg.org/JarrodCTaylor/clj-line.git"
+           :replace-deps {clojure-cli.repl/client {:git/url "https://codeberg.org/JarrodCTaylor/clj-line.git"
+                                            :git/sha "edfcf8995f43be7ee41114935673bcd87ae217db" :deps/root "client"}}}
   :serve  {:replace-paths [] :main-opts ["-m" "clojure-cli.repl.server"]
-                                            :git/sha "030b2c41aaa4574e9bb9970bfe4273fe667f9484" :deps/root "server"}}}}}
+           :replace-deps {clojure-cli.repl/server {:git/url "https://codeberg.org/JarrodCTaylor/clj-line.git"
+                                            :git/sha "edfcf8995f43be7ee41114935673bcd87ae217db" :deps/root "server"}}}}}
 ```
 
 ## Run
