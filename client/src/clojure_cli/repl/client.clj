@@ -1,5 +1,6 @@
 (ns clojure-cli.repl.client
   (:require
+    [clojure.edn :as edn]
     [clojure.java.shell :as sh]
     [clojure.string :as str]
     [clojure.tools.deps.config :as dc]
@@ -15,6 +16,12 @@
     [org.jline.keymap KeyMap]))
 
 (set! *warn-on-reflection* true)
+
+(def doc-view (atom {:token nil :text nil}))
+
+(defn hide-doc []
+  (reset! doc-view {:token nil :text nil})
+  (api/show-below nil))
 
 (defn cursor-at-end?
   "True when nothing other than possible whitespace follows the cursor in the buffer."
@@ -33,7 +40,8 @@
             ready-to-submit? (and (reader/complete? line)
                                   (if paired? (cursor-at-end? buf) true))]
         (if ready-to-submit?
-          (.callWidget rdr "accept-line")
+          (do (hide-doc)
+              (.callWidget rdr "accept-line"))
           (.write buf (str "\n" (apply str (repeat (reader/indent-column line (.cursor buf)) \space))))))
       true)))
 
@@ -198,6 +206,48 @@
             (api/print-above [{:text (str "=> " (or value err) "\n")
                                :style {:fg :bright-black}}])))))))
 
+(defn doc-code
+  "Returns code that prints the doc for token. The user doesn't expect
+  an eval so reset *1 *2 *3"
+  [token]
+  (pr-str
+    `(let [x# *1 y# *2 z# *3]
+       (clojure-cli.repl.server/print-doc-for ~token)
+       (set! *1 y#) (set! *2 z#)
+       x#)))
+
+(defn doc-preview [text cap]
+  (let [lines (str/split-lines text)]
+    (if (<= (count lines) cap)
+      text
+      (str (str/join "\n" (take cap lines)) "\n... doc key again for the full doc"))))
+
+(defn show-preview
+  "Preview the doc for the token below the user input. Height is capped to 25% of the screen"
+  [token]
+  (let [{:keys [out err]} (api/eval-code (doc-code token))
+        text (str/trim-newline (or out err))]
+    (reset! doc-view {:token token :text text})
+    (api/show-below [{:text (doc-preview text (quot (api/terminal-height) 4))
+                      :style {:fg :bright-black}}])))
+
+(defn doc-at-cursor
+  "Widget previewing the doc for the token at the cursor.
+  Sends the full doc to pager when the preview is already showing."
+  [^LineReader rdr]
+  (api/widget
+    (fn []
+      (let [buf (.getBuffer rdr)
+            src (.toString buf)
+            token (reader/token-at-cursor src (.cursor buf))
+            previewing? (and (some? token) (= token (:token @doc-view)))
+            symbol-token? (symbol? (try (edn/read-string token) (catch Exception _ nil)))]
+        (cond
+          previewing?   (do (api/page token (:text @doc-view)) (hide-doc))
+          symbol-token? (show-preview token)
+          :else         (hide-doc))
+        (.callWidget rdr "redisplay")))))
+
 (defn apply-keybindings
   [config reader]
   (when-let [keybindings (:keybindings config)]
@@ -207,10 +257,10 @@
 
 (defn auto-require-code
   "Returns code that requires libspecs into the current namespace.
-   nrepl rolls *1 *2 *3 forward after every eval so we reset them."
+   nrepl advances *1 *2 *3 after eval so reset them."
   [libspecs]
   (pr-str `(let [x# *1 y# *2 z# *3]
-             (require ~@(map #(list 'quote %) libspecs))
+             (apply require '~libspecs)
              (set! *1 y#) (set! *2 z#)
              x#)))
 
@@ -234,6 +284,8 @@
     (reset! api/session session)
     (when-let [keyseq (:eval-form-at-cursor config)]
       (api/bind-key rdr (api/key-sequence keyseq) (eval-form rdr)))
+    (when-let [keyseq (:doc-at-cursor config)]
+      (api/bind-key rdr (api/key-sequence keyseq) (doc-at-cursor rdr)))
     (paredit/install config rdr)
     (apply-keybindings config rdr)
     ;; ctrl-c during an eval outside of .readLine needs to interrupt the server

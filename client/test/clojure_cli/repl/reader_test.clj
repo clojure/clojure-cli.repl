@@ -111,3 +111,16 @@
     (is (= "(bar)" (sut/form-at-cursor "(foo (bar)" 6))))
   (testing "nothing complete at the cursor"
     (is (nil? (sut/form-at-cursor "(foo (bar)" 1)))))
+
+(deftest token-at-cursor-test
+  (testing "valid tokens"
+    (is (= "map" (sut/token-at-cursor "(map inc xs)" 2)))
+    (is (= "map" (sut/token-at-cursor "(map inc xs)" 4)))
+    (is (= "s/upper-case" (sut/token-at-cursor "s/upper-case" 5)))
+    (is (= "String/valueOf" (sut/token-at-cursor "String/valueOf" 14)))
+    (is (= "inc" (sut/token-at-cursor "(map inc)" 8))))
+  (testing "nil when cursor isn't on anything"
+    (is (nil? (sut/token-at-cursor "(map (" 6)))
+    (is (nil? (sut/token-at-cursor "(a  b)" 3)))
+    (is (nil? (sut/token-at-cursor "(map inc)" 0)))
+    (is (nil? (sut/token-at-cursor "" 0)))))

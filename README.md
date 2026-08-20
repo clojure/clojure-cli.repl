@@ -60,6 +60,7 @@ Use aliases `:clojure-cli.repl/client` or `:clojure-cli.repl/server` for more pr
 | `:keybindings` | client | qualified symbol | Fn `(f reader)` binding keys. |
 | `:bracket-pairs` | client | boolean | Auto close `[({` characters (`false`). |
 | `:eval-form-at-cursor` | client | key string | Eval the form at the cursor printing result above the prompt. |
+| `:doc-at-cursor` | client | key string | Doc for the symbol at the cursor clojure or java. |
 | `:paredit/<op>` | client | key string | Bind a structural editing op. Example: `:paredit/raise "M-r"`. |
 | `:auto-require` | client | vector of libspecs | Required into each namespace. |
 | `:middleware` | server | vector of qualified symbols | nREPL middleware.                      |
@@ -101,7 +102,7 @@ Paredit ops: `:paredit/slurp-forward` `:paredit/slurp-forward-fully`
 - [x] Print and Caught hooks (Read is the client's parser, reachable via `:keybindings`)
 - [x] Bracket pairs & structural-editing
 - [x] Inline eval of form at cursor output above the prompt
-- [ ] Docs
+- [x] Docs for the symbol at the cursor (clojure and java)
 - [ ] Inline tab completion of symbols (function or class)
 - [ ] Tap: (on/off, tap out text, filter pred)
 - [ ] REPL commands like :prompt (custom?)

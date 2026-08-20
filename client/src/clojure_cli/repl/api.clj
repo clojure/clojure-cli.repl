@@ -4,9 +4,11 @@
     [clojure-cli.repl.color :as color]
     [nrepl.core :as nrepl])
   (:import
+    [org.jline.builtins Less Source Source$InputStreamSource]
     [org.jline.keymap KeyMap]
     [org.jline.reader LineReader Widget]
-    [org.jline.terminal Terminal]))
+    [org.jline.terminal Terminal]
+    [org.jline.utils InfoCmp$Capability]))
 
 (set! *warn-on-reflection* true)
 
@@ -40,23 +42,40 @@
 (defn terminal
   "The running JLine Terminal."
   ^Terminal []
-  (some-> ^LineReader @reader .getTerminal))
+  (.getTerminal ^LineReader @reader))
 
-(defn terminal-width
-  "The terminal's current column count."
-  []
-  (some-> (terminal) .getWidth))
+(defn terminal-width [] (.getWidth (terminal)))
 
-(defn terminal-height
-  "The terminal's current row count."
-  []
-  (some-> (terminal) .getHeight))
+(defn terminal-height [] (.getHeight (terminal)))
 
 (defn print-above
   "Print a vector of {:text :style} segments above the input line, without
    disturbing in-progress input."
   [segments]
-  (some-> ^LineReader @reader (.printAbove (color/build-attrib-str segments))))
+  (.printAbove ^LineReader @reader (color/build-attrib-str segments)))
+
+(defn show-below
+  "Show segments in a pane directly below the input line.
+  Cleared by passing nil"
+  [segments]
+  (let [field (.getDeclaredField org.jline.reader.impl.LineReaderImpl "post")]
+    (.setAccessible field true)
+    (.set field @reader
+          (when segments
+            (reify java.util.function.Supplier
+              (get [_] (color/build-attrib-str segments)))))))
+
+(defn page
+  "Show text in full screen less proivded by JLine. q returns to the repl."
+  [title ^String text]
+  (let [t (terminal)
+        less (Less. t (.toPath (java.io.File. ".")))
+        source (Source$InputStreamSource.
+                 (java.io.ByteArrayInputStream. (.getBytes text "UTF-8"))
+                 false title)]
+    (^[Source/1] Less/.run less (into-array Source [source]))
+    (.puts t InfoCmp$Capability/keypad_xmit (into-array Object []))
+    (.flush (.writer t))))
 
 (defn widget
   "Reify a zero-arg fn as a JLine widget to use with `bind-key`.

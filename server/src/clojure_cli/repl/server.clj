@@ -1,5 +1,7 @@
 (ns clojure-cli.repl.server
   (:require
+    [clojure.data.json :as json]
+    [clojure.java.doc.api :as jdoc]
     [clojure.java.io :as io]
     [clojure.java.shell :as sh]
     [clojure.string :as str]
@@ -27,6 +29,53 @@
                  m))
              {}
              dynamic-vars))
+
+(def clojuredocs-index
+  "Fully qualified var name to its clojuredocs entry saved to the user data dir on first use."
+  (delay
+    (try
+      (let [f (dc/data-file :user 'org.clojure/clojure-cli.repl "clojuredocs-export.json")]
+        (when-not (.isFile f)
+          (.mkdirs (.getParentFile f))
+          (spit f (slurp "https://clojuredocs.org/clojuredocs-export.json")))
+        (into {}
+              (map (fn [v] [(str (:ns v) "/" (:name v))
+                            (update v :arglists (partial mapv #(str "[" % "]")))]))
+              (:vars (json/read-str (slurp f) :key-fn keyword))))
+      (catch Exception _ nil))))
+
+(defn clojuredocs-examples [fq]
+  (when-let [examples (seq (:examples (get @clojuredocs-index fq)))]
+    (str "== " fq "\n\n"
+         (str/join "\n\n" (map-indexed (fn [i e] (str "= example " (inc i) "\n" (:body e))) examples)))))
+
+(defn doc-block [fq-name arglists doc]
+  (str/join "\n" (remove str/blank? [fq-name (str/join " " arglists) doc])))
+
+(defn resolved [sym]
+  (try (ns-resolve *ns* sym) (catch Exception _ nil)))
+
+(defn clojuredocs-doc [sym]
+  (let [fq (if-let [{:keys [ns name]} (some-> (resolved sym) meta)]
+             (str ns "/" name)
+             (str "clojure.core/" sym))]
+    (when-let [{:keys [arglists doc]} (get @clojuredocs-index fq)]
+      (str (doc-block fq arglists doc) "\n\n" (clojuredocs-examples fq)))))
+
+(defn var-doc [sym]
+  (when-let [{:keys [ns name arglists doc]} (some-> (resolved sym) meta)]
+    (doc-block (str ns "/" name) arglists doc)))
+
+(defn java-doc [sym]
+  (try (with-out-str (jdoc/javadoc-fn (str sym) nil))
+       (catch Exception _ nil)))
+
+(defn print-doc-for [token]
+  (let [sym (symbol token)]
+    (print (or (clojuredocs-doc sym)
+               (var-doc sym)
+               (java-doc sym)
+               (str "No doc for " sym)))))
 
 (defn start [{:keys [middleware port] :as config}]
   (when-let [vars (not-empty (configured-dynamic-vars config))]

@@ -94,6 +94,25 @@
             (:spans (bracket-scan src)))
       (when (complete? src) src)))
 
+(defn token-char? [c]
+  (not (#{\space \tab \newline \, \( \) \[ \] \{ \} \" \; \' \` \~ \@ \^ \\} c)))
+
+(defn token-start [src i]
+  (- i (count (take-while token-char? (reverse (subs src 0 i))))))
+
+(defn token-end [src i]
+  (+ i (count (take-while token-char? (subs src i)))))
+
+(defn token-at-cursor
+  "The symbol token at the cursor or immediately prior, nil when not valid"
+  [^String src cursor]
+  (let [step-back? (or (= cursor (.length src))
+                       (#{\space \) \] \}} (.charAt src cursor)))
+        pos (if step-back? (dec cursor) cursor)
+        on-token? (and (<= 0 pos) (token-char? (.charAt src pos)))]
+    (when on-token?
+      (subs src (token-start src pos) (token-end src pos)))))
+
 (defn indent-column
   "Spaces to indent a continuation line"
   [^String src cursor]
