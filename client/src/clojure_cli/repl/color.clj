@@ -22,12 +22,17 @@
    :bright-cyan    (+ AttributedStyle/CYAN    AttributedStyle/BRIGHT)
    :bright-white   (+ AttributedStyle/WHITE   AttributedStyle/BRIGHT)})
 
+(defn color-code
+  "Accepts a colors keyword or an xterm 256 palette index."
+  [color]
+  (if (keyword? color) (colors color) color))
+
 (defn build-style
   "Build a JLine AttributedStyle from a style map, nil values yield the default style."
   [style-map]
   (let [{:keys [fg bg bold italic underline inverse]} style-map
-        fg-code (colors fg)
-        bg-code (colors bg)]
+        fg-code (color-code fg)
+        bg-code (color-code bg)]
     (cond-> AttributedStyle/DEFAULT
       fg-code   (.foreground fg-code)
       bg-code   (.background bg-code)

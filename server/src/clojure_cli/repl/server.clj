@@ -7,6 +7,7 @@
     [clojure.string :as str]
     [clojure.tools.deps.config :as dc]
     [nrepl.config :as nrepl-config]
+    [nrepl.middleware :as middleware]
     [nrepl.server :as server]
     [clojure-cli.repl.hooks :as hooks]))
 
@@ -77,11 +78,20 @@
                (java-doc sym)
                (str "No doc for " sym)))))
 
+(defn resolve-middleware
+  "Resolves a middleware symbol to its var.
+  Adds a default nREPL descriptor when the var has none."
+  [sym]
+  (let [v (requiring-resolve sym)]
+    (when-not (:nrepl.middleware/descriptor (meta v))
+      (middleware/set-descriptor! v {:requires #{} :expects #{"eval"} :handles {}}))
+    v))
+
 (defn start [{:keys [middleware port] :as config}]
   (when-let [vars (not-empty (configured-dynamic-vars config))]
     (alter-var-root #'nrepl-config/config assoc :dynamic-vars vars))
   (hooks/install config)
-  (let [extra (mapv requiring-resolve middleware)
+  (let [extra (mapv resolve-middleware middleware)
         handler (apply server/default-handler #'hooks/middleware extra)
         srv (server/start-server :port (or port 0) :handler handler)]
     (spit ".nrepl-port" (str (:port srv)))

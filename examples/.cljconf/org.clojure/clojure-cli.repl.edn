@@ -1,0 +1,2 @@
+{:prompt     dev.full-width-prompt/prompt
+ :middleware [dev.timing/middleware dev.heap/middleware]}
