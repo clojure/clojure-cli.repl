@@ -1,9 +1,9 @@
 # Middleware
 
-The `:middleware` config key names nREPL middleware vars with qualified
-symbols:
+`:middleware` takes a vector of qualified symbols, each resolving to nREPL middleware:
 
 ```clojure
+;; .cljconf/org.clojure/clojure-cli.repl.edn
 {:middleware [dev.timing/middleware dev.heap/middleware]}
 ```
 
@@ -25,7 +25,7 @@ at `clojure-cli.repl.api/last-response`.
          :clojure-cli.repl/heap-max (.maxMemory rt)}))))
 ```
 
-The map's keys share the response with nREPL's own keys, so namespacing them is recommended.
+Your map keys share the response with nREPL's own keys, so namespacing them is recommended.
 The values must survive nREPL's bencode wire encoding, so use strings or integers.
 
 ## Long form nREPL middleware

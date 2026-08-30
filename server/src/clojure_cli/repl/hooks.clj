@@ -19,10 +19,14 @@
 (defn hooked-print [value writer options] (@printer value writer options))
 (defn hooked-caught [throwable] (@catcher throwable))
 
+(defn resolve-hook [key sym]
+  (or (requiring-resolve sym)
+      (throw (ex-info (str "clojure-cli.repl: " key " var not found: " sym) {key sym}))))
+
 (defn install [{:keys [eval-hook print-hook caught-hook]}]
-  (when eval-hook (reset! evaluator ((requiring-resolve eval-hook) default-eval)))
-  (when print-hook (reset! printer ((requiring-resolve print-hook) default-print)))
-  (when caught-hook (reset! catcher ((requiring-resolve caught-hook) default-caught))))
+  (when eval-hook (reset! evaluator ((resolve-hook :eval-hook eval-hook) default-eval)))
+  (when print-hook (reset! printer ((resolve-hook :print-hook print-hook) default-print)))
+  (when caught-hook (reset! catcher ((resolve-hook :caught-hook caught-hook) default-caught))))
 
 (defn middleware [handler]
   (fn [{:keys [op] :as msg}]

@@ -82,7 +82,8 @@
   "Resolves a middleware symbol to its var.
   Adds a default nREPL descriptor when the var has none."
   [sym]
-  (let [v (requiring-resolve sym)]
+  (let [v (or (requiring-resolve sym)
+              (throw (ex-info (str "clojure-cli.repl: :middleware var not found: " sym) {:middleware sym})))]
     (when-not (:nrepl.middleware/descriptor (meta v))
       (middleware/set-descriptor! v {:requires #{} :expects #{"eval"} :handles {}}))
     v))

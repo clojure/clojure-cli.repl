@@ -3,7 +3,8 @@
 The `:prompt` config key names a zero-arg function with a qualified symbol:
 
 ```clojure
-{:prompt dev.my-prompt/prompt}
+;; .cljconf/org.clojure/clojure-cli.repl.edn
+{:prompt dev.prompt/prompt}
 ```
 
 The function lives in the config directory's `src` and is called by the client
@@ -14,7 +15,7 @@ before each input line. The function should return the prompt as a vector of seg
 A segment is a map of `:text` and an optional `:style`:
 
 ```clojure
-(ns dev.my-prompt
+(ns dev.prompt
   (:require [clojure-cli.repl.api :as api]))
 
 (defn prompt []
@@ -36,12 +37,12 @@ A `{:text "\n"}` segment starts a new line and can be used to create multi-line 
 * `last-response`: An atom holding the last eval's nREPL response. An `:ex` key is present if the eval threw an error.
 * `terminal-width`: The current terminal column width.
 
-The rest of the api namespace includes display and keybinding helpers and is covered in [api.md](api.md).
+The rest of the api namespace is documented with [keybindings](keys.md#the-api).
 
 ## Server data
 
 To isolate dependencies, the prompt runs in a separate process from where code is evaluated.
-Middleware is required to add server data to the prompt. See [middleware.md](middleware.md).
+[Middleware](middleware.md) is required to add server data to the prompt.
 
 ## Example
 

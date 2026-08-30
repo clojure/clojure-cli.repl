@@ -1,2 +1,7 @@
-{:prompt     dev.full-width-prompt/prompt
- :middleware [dev.timing/middleware dev.heap/middleware]}
+{:prompt dev.full-width-prompt/prompt
+ :middleware [dev.timing/middleware dev.heap/middleware]
+ :keybindings dev.keybindings/install
+ :print-hook dev.hooks/pprint-values
+ :bracket-pairs false
+ :eval-form-at-cursor "TAB"
+ :doc-at-cursor "C-]"}
