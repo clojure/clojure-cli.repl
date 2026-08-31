@@ -207,14 +207,9 @@
                                :style {:fg :bright-black}}])))))))
 
 (defn doc-code
-  "Returns code that prints the doc for token. The user doesn't expect
-  an eval so reset *1 *2 *3"
+  "Returns code that prints the doc for token."
   [token]
-  (pr-str
-    `(let [x# *1 y# *2 z# *3]
-       (clojure-cli.repl.server/print-doc-for ~token)
-       (set! *1 y#) (set! *2 z#)
-       x#)))
+  (pr-str `(clojure-cli.repl.server/print-doc-for ~token)))
 
 (defn doc-preview [text cap]
   (let [lines (str/split-lines text)]
@@ -225,7 +220,7 @@
 (defn show-preview
   "Preview the doc for the token below the user input. Height is capped to 25% of the screen"
   [token]
-  (let [{:keys [out err]} (api/eval-code (doc-code token))
+  (let [{:keys [out err]} (nrepl/eval-quiet @api/tool-session (doc-code token) @api/current-ns)
         text (str/trim-newline (or out err))]
     (reset! doc-view {:token token :text text})
     (api/show-below [{:text (doc-preview text (quot (api/terminal-height) 4))
@@ -256,20 +251,16 @@
       (throw (ex-info (str "clojure-cli.repl: :keybindings var not found: " keybindings) {:keybindings keybindings})))))
 
 (defn auto-require-code
-  "Returns code that requires libspecs into the current namespace.
-   nrepl advances *1 *2 *3 after eval so reset them."
+  "Returns code that requires libspecs."
   [libspecs]
-  (pr-str `(let [x# *1 y# *2 z# *3]
-             (apply require '~libspecs)
-             (set! *1 y#) (set! *2 z#)
-             x#)))
+  (pr-str `(apply require '~libspecs)))
 
 (defn auto-require
-  "Evals a require of libspecs in the current namespace.
+  "Evals a require of libspecs in the provided namespace.
    Prints the error if a libspec fails to load."
-  [session libspecs]
+  [session ns-name libspecs]
   (when (seq libspecs)
-    (let [{:keys [ex err]} (nrepl/eval-quiet session (auto-require-code libspecs))]
+    (let [{:keys [ex err]} (nrepl/eval-quiet session (auto-require-code libspecs) ns-name)]
       (when ex
         (println "clojure-cli.repl: :auto-require failed:" (str/trim (or err ex)))))))
 
@@ -277,11 +268,12 @@
   (let [config (load-config 'org.clojure/clojure-cli.repl)
         prompt-fn (resolve-prompt config)
         port (Integer/parseInt (str/trim (or (first args) (slurp ".nrepl-port"))))
-        {:keys [session]} (nrepl/connect port)
+        {:keys [session tool-session]} (nrepl/connect port)
         libspecs (:auto-require config)
         rdr (build-reader config (history-file 'org.clojure/clojure-cli.repl config))]
     (reset! api/reader rdr)
     (reset! api/session session)
+    (reset! api/tool-session tool-session)
     (when-let [keyseq (:eval-form-at-cursor config)]
       (api/bind-key rdr (api/key-sequence keyseq) (eval-form rdr)))
     (when-let [keyseq (:doc-at-cursor config)]
@@ -291,9 +283,11 @@
     ;; ctrl-c during an eval outside of .readLine needs to interrupt the server
     (.handle (.getTerminal rdr) Terminal$Signal/INT
              (reify Terminal$SignalHandler
-               (handle [_ _sig] (nrepl/interrupt session))))
+               (handle [_ _sig]
+                 (nrepl/interrupt session)
+                 (nrepl/interrupt tool-session))))
     (println "connected to nREPL on" port)
-    (auto-require session libspecs)
+    (auto-require tool-session "user" libspecs)
     (loop [ns "user"]
       (reset! api/current-ns ns)
       (let [line (try (.readLine rdr (render-prompt prompt-fn))
@@ -305,7 +299,7 @@
                          (let [resp (nrepl/eval-code session line)]
                            (reset! api/last-response resp)
                            (or (:ns resp) ns)))]
-            (when (not= new-ns ns) (auto-require session libspecs))
+            (when (not= new-ns ns) (auto-require tool-session new-ns libspecs))
             (recur new-ns)))))
     ;; jline and the nrepl client leave non-daemon threads behind
     (.close (.getTerminal rdr))

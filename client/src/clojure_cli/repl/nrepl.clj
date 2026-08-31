@@ -17,18 +17,19 @@
           (nrepl/message session {:op "eval" :code code})))
 
 (defn eval-quiet
-  "Evals without printing. Nrepl can split :err across messages."
-  [session code]
-  (let [messages (nrepl/message session {:op "eval" :code code})
-        merged-response (reduce merge {} messages)
-        whole-err (not-empty (apply str (keep :err messages)))]
-    (assoc merged-response :err whole-err)))
+  "Evals without printing. Nrepl can split :out and :err across messages."
+  [session code ns-name]
+  (let [messages (nrepl/message session {:op "eval" :code code :ns ns-name})]
+    (assoc (reduce merge {} messages)
+           :out (not-empty (apply str (keep :out messages)))
+           :err (not-empty (apply str (keep :err messages))))))
 
 (defn interrupt [session]
   (nrepl/message session {:op "interrupt"}))
 
 (defn connect [port]
   (let [conn (nrepl/connect :port port)
-        client (nrepl/client conn Long/MAX_VALUE)
-        session (nrepl/client-session client)]
-    {:conn conn :session session}))
+        client (nrepl/client conn Long/MAX_VALUE)]
+    {:conn conn
+     :session (nrepl/client-session client)
+     :tool-session (nrepl/client-session client)}))
