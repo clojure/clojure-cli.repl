@@ -11,9 +11,10 @@
     [clojure-cli.repl.highlight :as highlight]
     [clojure-cli.repl.color :as color])
   (:import
-    [org.jline.terminal Terminal$Signal Terminal$SignalHandler TerminalBuilder]
+    [org.jline.terminal Terminal Terminal$Signal Terminal$SignalHandler TerminalBuilder]
     [org.jline.reader Buffer LineReader LineReaderBuilder Reference Widget EndOfFileException UserInterruptException]
-    [org.jline.keymap KeyMap]))
+    [org.jline.keymap KeyMap BindingReader]
+    [org.jline.utils Display InfoCmp$Capability]))
 
 (set! *warn-on-reflection* true)
 
@@ -243,6 +244,158 @@
           :else         (hide-doc))
         (.callWidget rdr "redisplay")))))
 
+(defn inspect-op [code]
+  (let [{:keys [out err ex]} (nrepl/eval-quiet @api/tool-session code @api/current-ns)]
+    (cond
+      ex (do (api/print-above [{:text (str err "\n") :style {:fg :red}}]) nil)
+      err (assoc (edn/read-string out) :note (str/trim err))
+      :else (edn/read-string out))))
+
+(defn puts [^Terminal term capability]
+  (.puts term capability (into-array Object [])))
+
+(defn clamped-line [cols segments]
+  (let [s (color/build-attrib-str (conj segments {:text "\n"}))]
+    (if (> (.columnLength s) cols)
+      (.columnSubSequence s 0 cols)
+      s)))
+
+(defn footer-text [{:keys [start total entries meta-action alt-view]}]
+  (let [has-entries? (boolean (seq entries))]
+    (str (when has-entries? (str (inc start) "-" (+ start (count entries)) " of " total "  "))
+         (if has-entries? "←↓↑→/hjkl navigate" "←/h back")
+         " · d def"
+         (when meta-action (str " · m " meta-action))
+         (when alt-view (str " · v " alt-view))
+         " · q quit")))
+
+(defn breadcrumb [path info cols]
+  (let [gap "  "
+        path-width (max 1 (- cols (count info) (count gap))) ;; info could be longer than the path
+        path (if (> (count path) path-width)
+               (str "…" (subs path (inc (- (count path) path-width))))
+               path)]
+    [{:text path :style {:fg :cyan :bold true}}
+     {:text (str gap info) :style {:fg :bright-black}}]))
+
+(defn body-rows [{:keys [leaf entries]} cursor]
+  (if leaf
+    (map (fn [leaf-line] [{:text leaf-line}]) (str/split-lines leaf))
+    (map-indexed (fn [i entry] [{:text entry :style (when (= i cursor) {:inverse true})}]) entries)))
+
+(defn inspector-lines [{:keys [path info header] :as view} cursor cols footer]
+  (let [head [(breadcrumb path info cols) [{:text header :style {:bold true}}]]
+        body (body-rows view cursor)
+        tail [[{:text ""}] [{:text (or footer (footer-text view)) :style {:fg :bright-black}}]]
+        rows (reduce into [head body tail])]
+    (mapv #(clamped-line cols %) rows)))
+
+(defn inspector-keymap [^Terminal term]
+  (let [keymap (KeyMap.)
+        bind (fn [action & sequences]
+               (doseq [^CharSequence sequence sequences]
+                 (.bind keymap action sequence)))]
+    (bind :up (KeyMap/key term InfoCmp$Capability/key_up) "k")
+    (bind :down (KeyMap/key term InfoCmp$Capability/key_down) "j")
+    (bind :in (KeyMap/key term InfoCmp$Capability/key_right) "l" "\r")
+    (bind :out (KeyMap/key term InfoCmp$Capability/key_left) "h")
+    (bind :page-down " " (KeyMap/ctrl \D))
+    (bind :page-up "b" (KeyMap/ctrl \U))
+    (bind :def "d")
+    (bind :meta "m")
+    (bind :view "v")
+    (bind :quit "q")
+    keymap))
+
+(defn read-name [^Terminal term ^Display display ^BindingReader binding-reader view cursor cols]
+  (puts term InfoCmp$Capability/cursor_normal)
+  (let [result (loop [buf ""]
+                 (.update display (inspector-lines view cursor cols (str "def as: " buf)) -1)
+                 (let [key-code (.readCharacter binding-reader)
+                       commit? (= key-code (int \return))
+                       cancel? (or (= key-code 27) (= key-code -1))
+                       delete? (or (= key-code (int \backspace)) (= key-code 127))
+                       control? (Character/isISOControl (int key-code))]
+                   (cond
+                     commit? (not-empty buf)
+                     cancel? nil
+                     delete? (recur (apply str (butlast buf)))
+                     control? (recur buf)
+                     :else (recur (str buf (char key-code))))))]
+    (puts term InfoCmp$Capability/cursor_invisible)
+    result))
+
+(defn enter-alt-screen [^Terminal term]
+  (puts term InfoCmp$Capability/enter_ca_mode)
+  (puts term InfoCmp$Capability/clear_screen)
+  (puts term InfoCmp$Capability/cursor_invisible))
+
+(defn exit-alt-screen [^Terminal term]
+  (puts term InfoCmp$Capability/cursor_normal)
+  (puts term InfoCmp$Capability/exit_ca_mode)
+  (puts term InfoCmp$Capability/keypad_xmit)
+  (.flush (.writer term)))
+
+(defn def-var [op session-id prompt-name view cursor]
+  (if-let [var-name (prompt-name view cursor)]
+    (let [result (op `(clojure-cli.repl.inspect/def-as ~session-id ~var-name))]
+      [result cursor (or (:note result) (str "def'd " (:defd result)))])
+    [view cursor nil]))
+
+(defn inspector-step [op session-id prompt-name key view cursor]
+  (let [n (count (:entries view))
+        start (or (:start view) 0)
+        total (or (:total view) 0)
+        page (fn [delta] (or (op `(clojure-cli.repl.inspect/page ~delta)) view))]
+    (case key
+      :down (cond
+              (< (inc cursor) n) [view (inc cursor) nil]
+              (< (+ start n) total) [(page 1) 0 nil]
+              :else [view cursor nil])
+      :up (cond
+            (pos? cursor) [view (dec cursor) nil]
+            (pos? start) (let [prev (page -1)] [prev (dec (count (:entries prev))) nil])
+            :else [view cursor nil])
+      :in (if (pos? n)
+            [(or (op `(clojure-cli.repl.inspect/down ~(+ start cursor))) view) 0 nil]
+            [view cursor nil])
+      :out (let [new-view (op `(clojure-cli.repl.inspect/up))]
+             [(or new-view view) (:cursor new-view 0) nil])
+      :page-down [(page 1) 0 nil]
+      :page-up [(page -1) 0 nil]
+      :meta (let [new-view (op `(clojure-cli.repl.inspect/toggle-meta ~cursor))]
+              [(or new-view view) (:cursor new-view 0) (:note new-view)])
+      :view (let [new-view (op `(clojure-cli.repl.inspect/toggle-table))]
+              [(or new-view view) cursor (:note new-view)])
+      :def (def-var op session-id prompt-name view cursor)
+      :quit nil)))
+
+(defn inspector-loop [^Terminal term ^Display display op session-id cols initial-view]
+  (let [keymap (inspector-keymap term)
+        binding-reader (BindingReader. (.reader term))
+        prompt-name (fn [view cursor]
+                      (read-name term display binding-reader view cursor cols))]
+    (loop [view initial-view cursor 0 footer nil]
+      (.update display (inspector-lines view cursor cols footer) -1)
+      (let [key (.readBinding binding-reader keymap)]
+        (when-let [[view cursor footer] (inspector-step op session-id prompt-name key view cursor)]
+          (recur view (long cursor) footer))))))
+
+(defn inspect [^LineReader rdr session-id]
+  (api/widget
+    (fn []
+      (let [term (api/terminal)
+            cols (api/terminal-width)
+            height (api/terminal-height)
+            rows (max 1 (- height 5))
+            op (fn [form] (inspect-op (pr-str form)))]
+        (when-let [initial-view (op `(clojure-cli.repl.inspect/start ~session-id ~rows ~cols))]
+          (let [display (doto (Display. term true) (.resize height cols))]
+            (enter-alt-screen term)
+            (inspector-loop term display op session-id cols initial-view)
+            (exit-alt-screen term)
+            (.callWidget rdr "redisplay")))))))
+
 (defn apply-keybindings
   [config reader]
   (when-let [keybindings (:keybindings config)]
@@ -268,7 +421,7 @@
   (let [config (load-config 'org.clojure/clojure-cli.repl)
         prompt-fn (resolve-prompt config)
         port (Integer/parseInt (str/trim (or (first args) (slurp ".nrepl-port"))))
-        {:keys [session tool-session]} (nrepl/connect port)
+        {:keys [session tool-session session-id]} (nrepl/connect port)
         libspecs (:auto-require config)
         rdr (build-reader config (history-file 'org.clojure/clojure-cli.repl config))]
     (reset! api/reader rdr)
@@ -278,6 +431,8 @@
       (api/bind-key rdr (api/key-sequence keyseq) (eval-form rdr)))
     (when-let [keyseq (:doc-at-cursor config)]
       (api/bind-key rdr (api/key-sequence keyseq) (doc-at-cursor rdr)))
+    (when-let [keyseq (:inspect config)]
+      (api/bind-key rdr (api/key-sequence keyseq) (inspect rdr session-id)))
     (paredit/install config rdr)
     (apply-keybindings config rdr)
     ;; ctrl-c during an eval outside of .readLine needs to interrupt the server

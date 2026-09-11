@@ -1,6 +1,7 @@
 (ns clojure-cli.repl.hooks
   (:require
     [clojure.main :as main]
+    [clojure-cli.repl.inspect :as inspect]
     [nrepl.middleware :refer [set-descriptor!]]
     [nrepl.middleware.caught :as caught]
     [nrepl.middleware.print :as print]))
@@ -30,13 +31,17 @@
 
 (defn middleware [handler]
   (fn [{:keys [op] :as msg}]
-    (handler (if (= op "eval")
-               (cond-> msg
-                 @evaluator (assoc :eval (str `hooked-eval))
-                 @printer (assoc ::print/print (str `hooked-print))
-                 @catcher (assoc ::caught/caught (str `hooked-caught)))
-               msg))))
+    (let [eval? (= op "eval")
+          user-eval? (and eval? (not (:tool-eval msg)))]
+      (when eval?
+        (inspect/remember-session (:session msg)))
+      (handler (if user-eval?
+                 (cond-> msg
+                   @evaluator (assoc :eval (str `hooked-eval))
+                   @printer (assoc ::print/print (str `hooked-print))
+                   @catcher (assoc ::caught/caught (str `hooked-caught)))
+                 msg)))))
 
-;; Order the middleware before the nrepl eval handler
+;; Order the middleware after session resolution and before the nrepl eval handler
 (set-descriptor! #'middleware
-  {:requires #{} :expects #{"eval"} :handles {}})
+  {:requires #{"clone"} :expects #{"eval"} :handles {}})

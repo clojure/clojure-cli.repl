@@ -1,8 +1,8 @@
 # clojure-cli.repl
 
-A REPL for the Clojure CLI featuring multi-line editing and proper indentation,
+A REPL for the Clojure CLI featuring multi-line editing with proper indentation,
 bracket highlighting, structural editing, inline eval, doc lookup for Clojure
-and Java, configurable prompts, keybindings, and much more.
+and Java, a data inspector, configurable prompts, keybindings, and much more.
 
 It runs as two processes. An nREPL server that evaluates code, and a JLine client that
 provides a terminal prompt. Separate processes keep the client dependencies
@@ -61,6 +61,10 @@ Structural editing:
 
 ![paredit gif](doc/images/paredit.gif)
 
+Browse the last result, drill into nested data:
+
+![inspector gif](doc/images/inspect.gif)
+
 ## Configuration
 
 The REPL is highly customizable. Behavior can be [configured](doc/configuration.md) at the user level, project level, or both.
@@ -71,6 +75,7 @@ The REPL is highly customizable. Behavior can be [configured](doc/configuration.
 | `:middleware` | Server data on eval responses | [Middleware](doc/middleware.md) |
 | `:keybindings` `:editing-mode` | Keys and widgets | [Keys](doc/keys.md) |
 | `:paredit/<op>` `:bracket-pairs` `:eval-form-at-cursor` `:doc-at-cursor` | Editing | [Structural editing](doc/editing.md) |
+| `:inspect` | Browse the last result | [Inspector](doc/inspector.md) |
 | `:eval-hook` `:print-hook` `:caught-hook` | Server hooks | [Hooks](doc/hooks.md) |
 | `:history` `:auto-require` `:port` and dynamic vars | Session behavior | [Configuration](doc/configuration.md) |
 

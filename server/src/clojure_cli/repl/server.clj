@@ -9,7 +9,8 @@
     [nrepl.config :as nrepl-config]
     [nrepl.middleware :as middleware]
     [nrepl.server :as server]
-    [clojure-cli.repl.hooks :as hooks]))
+    [clojure-cli.repl.hooks :as hooks]
+    [clojure-cli.repl.inspect]))
 
 (set! *warn-on-reflection* true)
 
@@ -41,7 +42,7 @@
           (spit f (slurp "https://clojuredocs.org/clojuredocs-export.json")))
         (into {}
               (map (fn [v] [(str (:ns v) "/" (:name v))
-                            (update v :arglists (partial mapv #(str "[" % "]")))]))
+                            (update v :arglists (fn [arglists] (mapv #(str "[" % "]") arglists)))]))
               (:vars (json/read-str (slurp f) :key-fn keyword))))
       (catch Exception _ nil))))
 

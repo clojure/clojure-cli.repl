@@ -3,5 +3,6 @@
  :keybindings dev.keybindings/install
  :print-hook dev.hooks/pprint-values
  :bracket-pairs false
- :eval-form-at-cursor "TAB"
- :doc-at-cursor "C-]"}
+ :eval-form-at-cursor "M-e"
+ :doc-at-cursor "M-d"
+ :inspect "M-i"}
