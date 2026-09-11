@@ -16,13 +16,13 @@ Until official release, add these aliases to your user `deps.edn`:
 {:aliases
  {:repl   {:replace-paths [] :main-opts ["-m" "clojure-cli.repl.server" "repl"]
            :replace-deps {clojure-cli.repl/server {:git/url "https://codeberg.org/JarrodCTaylor/clj-line.git"
-                                            :git/sha "8d4b0ddd56c7f1db784d5b3585b069ce6d41b673" :deps/root "server"}}}
+                                            :git/sha "96a43387ad0be4df691a7e07da18e604f1206501" :deps/root "server"}}}
   :attach {:replace-paths [] :main-opts ["-m" "clojure-cli.repl.client"]
            :replace-deps {clojure-cli.repl/client {:git/url "https://codeberg.org/JarrodCTaylor/clj-line.git"
-                                            :git/sha "8d4b0ddd56c7f1db784d5b3585b069ce6d41b673" :deps/root "client"}}}
+                                            :git/sha "96a43387ad0be4df691a7e07da18e604f1206501" :deps/root "client"}}}
   :serve  {:replace-paths [] :main-opts ["-m" "clojure-cli.repl.server"]
            :replace-deps {clojure-cli.repl/server {:git/url "https://codeberg.org/JarrodCTaylor/clj-line.git"
-                                            :git/sha "8d4b0ddd56c7f1db784d5b3585b069ce6d41b673" :deps/root "server"}}}}}
+                                            :git/sha "96a43387ad0be4df691a7e07da18e604f1206501" :deps/root "server"}}}}}
 ```
 
 **Note: Java 17+ is required**
