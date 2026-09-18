@@ -28,10 +28,6 @@
   "Atom holding the running nREPL client session."
   (atom nil))
 
-(def tool-session
-  "Atom holding the nREPL session for internal evals."
-  (atom nil))
-
 (defn eval-code
   "Evaluate `code` on the server and return the merged nREPL response
   for the caller to display."

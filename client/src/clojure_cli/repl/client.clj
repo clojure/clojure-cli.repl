@@ -207,11 +207,6 @@
             (api/print-above [{:text (str "=> " (or value err) "\n")
                                :style {:fg :bright-black}}])))))))
 
-(defn doc-code
-  "Returns code that prints the doc for token."
-  [token]
-  (pr-str `(clojure-cli.repl.server/print-doc-for ~token)))
-
 (defn doc-preview [text cap]
   (let [lines (str/split-lines text)]
     (if (<= (count lines) cap)
@@ -221,8 +216,8 @@
 (defn show-preview
   "Preview the doc for the token below the user input. Height is capped to 25% of the screen"
   [token]
-  (let [{:keys [out err]} (nrepl/eval-quiet @api/tool-session (doc-code token) @api/current-ns)
-        text (str/trim-newline (or out err))]
+  (let [{:keys [doc]} (nrepl/request @api/session {:op "doc" :sym token :ns @api/current-ns})
+        text (str/trim-newline (or doc ""))]
     (reset! doc-view {:token token :text text})
     (api/show-below [{:text (doc-preview text (quot (api/terminal-height) 4))
                       :style {:fg :bright-black}}])))
@@ -244,12 +239,8 @@
           :else         (hide-doc))
         (.callWidget rdr "redisplay")))))
 
-(defn inspect-op [code]
-  (let [{:keys [out err ex]} (nrepl/eval-quiet @api/tool-session code @api/current-ns)]
-    (cond
-      ex (do (api/print-above [{:text (str err "\n") :style {:fg :red}}]) nil)
-      err (assoc (edn/read-string out) :note (str/trim err))
-      :else (edn/read-string out))))
+(defn inspect-op [message]
+  (edn/read-string (:view (nrepl/request @api/session message))))
 
 (defn puts [^Terminal term capability]
   (.puts term capability (into-array Object [])))
@@ -336,17 +327,17 @@
   (puts term InfoCmp$Capability/keypad_xmit)
   (.flush (.writer term)))
 
-(defn def-var [op session-id prompt-name view cursor]
+(defn def-var [prompt-name view cursor]
   (if-let [var-name (prompt-name view cursor)]
-    (let [result (op `(clojure-cli.repl.inspect/def-as ~session-id ~var-name))]
+    (let [result (inspect-op {:op "inspect-def" :name var-name})]
       [result cursor (or (:note result) (str "def'd " (:defd result)))])
     [view cursor nil]))
 
-(defn inspector-step [op session-id prompt-name key view cursor]
+(defn inspector-step [prompt-name key view cursor]
   (let [n (count (:entries view))
         start (or (:start view) 0)
         total (or (:total view) 0)
-        page (fn [delta] (or (op `(clojure-cli.repl.inspect/page ~delta)) view))]
+        page (fn [delta] (inspect-op {:op "inspect-page" :delta delta}))]
     (case key
       :down (cond
               (< (inc cursor) n) [view (inc cursor) nil]
@@ -357,20 +348,20 @@
             (pos? start) (let [prev (page -1)] [prev (dec (count (:entries prev))) nil])
             :else [view cursor nil])
       :in (if (pos? n)
-            [(or (op `(clojure-cli.repl.inspect/down ~(+ start cursor))) view) 0 nil]
+            [(inspect-op {:op "inspect-in" :idx (+ start cursor)}) 0 nil]
             [view cursor nil])
-      :out (let [new-view (op `(clojure-cli.repl.inspect/up))]
-             [(or new-view view) (:cursor new-view 0) nil])
+      :out (let [new-view (inspect-op {:op "inspect-out"})]
+             [new-view (:cursor new-view 0) nil])
       :page-down [(page 1) 0 nil]
       :page-up [(page -1) 0 nil]
-      :meta (let [new-view (op `(clojure-cli.repl.inspect/toggle-meta ~cursor))]
-              [(or new-view view) (:cursor new-view 0) (:note new-view)])
-      :view (let [new-view (op `(clojure-cli.repl.inspect/toggle-table))]
-              [(or new-view view) cursor (:note new-view)])
-      :def (def-var op session-id prompt-name view cursor)
+      :meta (let [new-view (inspect-op {:op "inspect-toggle-meta" :cursor cursor})]
+              [new-view (:cursor new-view 0) (:note new-view)])
+      :view (let [new-view (inspect-op {:op "inspect-toggle-table"})]
+              [new-view cursor (:note new-view)])
+      :def (def-var prompt-name view cursor)
       :quit nil)))
 
-(defn inspector-loop [^Terminal term ^Display display op session-id cols initial-view]
+(defn inspector-loop [^Terminal term ^Display display cols initial-view]
   (let [keymap (inspector-keymap term)
         binding-reader (BindingReader. (.reader term))
         prompt-name (fn [view cursor]
@@ -378,23 +369,22 @@
     (loop [view initial-view cursor 0 footer nil]
       (.update display (inspector-lines view cursor cols footer) -1)
       (let [key (.readBinding binding-reader keymap)]
-        (when-let [[view cursor footer] (inspector-step op session-id prompt-name key view cursor)]
+        (when-let [[view cursor footer] (inspector-step prompt-name key view cursor)]
           (recur view (long cursor) footer))))))
 
-(defn inspect [^LineReader rdr session-id]
+(defn inspect [^LineReader rdr]
   (api/widget
     (fn []
       (let [term (api/terminal)
             cols (api/terminal-width)
             height (api/terminal-height)
             rows (max 1 (- height 5))
-            op (fn [form] (inspect-op (pr-str form)))]
-        (when-let [initial-view (op `(clojure-cli.repl.inspect/start ~session-id ~rows ~cols))]
-          (let [display (doto (Display. term true) (.resize height cols))]
-            (enter-alt-screen term)
-            (inspector-loop term display op session-id cols initial-view)
-            (exit-alt-screen term)
-            (.callWidget rdr "redisplay")))))))
+            initial-view (inspect-op {:op "inspect-start" :rows rows :cols cols})
+            display (doto (Display. term true) (.resize height cols))]
+        (enter-alt-screen term)
+        (inspector-loop term display cols initial-view)
+        (exit-alt-screen term)
+        (.callWidget rdr "redisplay")))))
 
 (defn apply-keybindings
   [config reader]
@@ -403,46 +393,38 @@
       (f reader)
       (throw (ex-info (str "clojure-cli.repl: :keybindings var not found: " keybindings) {:keybindings keybindings})))))
 
-(defn auto-require-code
-  "Returns code that requires libspecs."
-  [libspecs]
-  (pr-str `(apply require '~libspecs)))
-
 (defn auto-require
-  "Evals a require of libspecs in the provided namespace.
+  "Requires libspecs in ns-name on the server.
    Prints the error if a libspec fails to load."
-  [session ns-name libspecs]
+  [ns-name libspecs]
   (when (seq libspecs)
-    (let [{:keys [ex err]} (nrepl/eval-quiet session (auto-require-code libspecs) ns-name)]
-      (when ex
-        (println "clojure-cli.repl: :auto-require failed:" (str/trim (or err ex)))))))
+    (when-let [error (:error (nrepl/request @api/session {:op "auto-require" :libspecs (pr-str libspecs) :ns ns-name}))]
+      (println "clojure-cli.repl: :auto-require failed:" error))))
 
 (defn -main [& args]
   (let [config (load-config 'org.clojure/clojure-cli.repl)
         prompt-fn (resolve-prompt config)
         port (Integer/parseInt (str/trim (or (first args) (slurp ".nrepl-port"))))
-        {:keys [session tool-session session-id]} (nrepl/connect port)
+        {:keys [session]} (nrepl/connect port)
         libspecs (:auto-require config)
         rdr (build-reader config (history-file 'org.clojure/clojure-cli.repl config))]
     (reset! api/reader rdr)
     (reset! api/session session)
-    (reset! api/tool-session tool-session)
     (when-let [keyseq (:eval-form-at-cursor config)]
       (api/bind-key rdr (api/key-sequence keyseq) (eval-form rdr)))
     (when-let [keyseq (:doc-at-cursor config)]
       (api/bind-key rdr (api/key-sequence keyseq) (doc-at-cursor rdr)))
     (when-let [keyseq (:inspect config)]
-      (api/bind-key rdr (api/key-sequence keyseq) (inspect rdr session-id)))
+      (api/bind-key rdr (api/key-sequence keyseq) (inspect rdr)))
     (paredit/install config rdr)
     (apply-keybindings config rdr)
     ;; ctrl-c during an eval outside of .readLine needs to interrupt the server
     (.handle (.getTerminal rdr) Terminal$Signal/INT
              (reify Terminal$SignalHandler
                (handle [_ _sig]
-                 (nrepl/interrupt session)
-                 (nrepl/interrupt tool-session))))
+                 (nrepl/interrupt session))))
     (println "connected to nREPL on" port)
-    (auto-require tool-session "user" libspecs)
+    (auto-require "user" libspecs)
     (loop [ns "user"]
       (reset! api/current-ns ns)
       (let [line (try (.readLine rdr (render-prompt prompt-fn))
@@ -454,7 +436,7 @@
                          (let [resp (nrepl/eval-code session line)]
                            (reset! api/last-response resp)
                            (or (:ns resp) ns)))]
-            (when (not= new-ns ns) (auto-require tool-session new-ns libspecs))
+            (when (not= new-ns ns) (auto-require new-ns libspecs))
             (recur new-ns)))))
     ;; jline and the nrepl client leave non-daemon threads behind
     (.close (.getTerminal rdr))

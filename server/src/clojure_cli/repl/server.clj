@@ -1,6 +1,7 @@
 (ns clojure-cli.repl.server
   (:require
     [clojure.data.json :as json]
+    [clojure.edn :as edn]
     [clojure.java.doc.api :as jdoc]
     [clojure.java.io :as io]
     [clojure.java.shell :as sh]
@@ -8,9 +9,11 @@
     [clojure.tools.deps.config :as dc]
     [nrepl.config :as nrepl-config]
     [nrepl.middleware :as middleware]
+    [nrepl.misc :refer [response-for]]
     [nrepl.server :as server]
+    [nrepl.transport :as transport]
     [clojure-cli.repl.hooks :as hooks]
-    [clojure-cli.repl.inspect]))
+    [clojure-cli.repl.inspect :as inspect]))
 
 (set! *warn-on-reflection* true)
 
@@ -72,12 +75,45 @@
   (try (with-out-str (jdoc/javadoc-fn (str sym) nil))
        (catch Exception _ nil)))
 
-(defn print-doc-for [token]
-  (let [sym (symbol token)]
-    (print (or (clojuredocs-doc sym)
-               (var-doc sym)
-               (java-doc sym)
-               (str "No doc for " sym)))))
+(defn doc-for [token ns-name]
+  (binding [*ns* (the-ns (symbol ns-name))]
+    (let [sym (symbol token)]
+      (or (clojuredocs-doc sym)
+          (var-doc sym)
+          (java-doc sym)
+          (str "No doc for " sym)))))
+
+(defn doc-middleware [handler]
+  (fn [{:keys [op sym ns transport] :as msg}]
+    (if (= op "doc")
+      (transport/send transport (response-for msg :doc (doc-for sym ns) :status ["done"]))
+      (handler msg))))
+
+(middleware/set-descriptor! #'doc-middleware
+  {:requires #{}
+   :expects #{}
+   :handles {"doc" {}}})
+
+(defn auto-require [libspecs ns-name]
+  (binding [*ns* (the-ns (symbol ns-name))]
+    (try (apply require (edn/read-string libspecs))
+         nil
+         (catch Exception e (ex-message e)))))
+
+(defn auto-require-middleware [handler]
+  (fn [{:keys [op libspecs ns transport] :as msg}]
+    (if (= op "auto-require")
+      (let [error (auto-require libspecs ns)]
+        (transport/send transport
+                        (if error
+                          (response-for msg :error error :status ["done"])
+                          (response-for msg :status ["done"]))))
+      (handler msg))))
+
+(middleware/set-descriptor! #'auto-require-middleware
+  {:requires #{}
+   :expects #{}
+   :handles {"auto-require" {}}})
 
 (defn resolve-middleware
   "Resolves a middleware symbol to its var.
@@ -94,7 +130,7 @@
     (alter-var-root #'nrepl-config/config assoc :dynamic-vars vars))
   (hooks/install config)
   (let [extra (mapv resolve-middleware middleware)
-        handler (apply server/default-handler #'hooks/middleware extra)
+        handler (apply server/default-handler #'hooks/middleware #'doc-middleware #'auto-require-middleware #'inspect/middleware extra)
         srv (server/start-server :port (or port 0) :handler handler)]
     (spit ".nrepl-port" (str (:port srv)))
     srv))

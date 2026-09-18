@@ -16,13 +16,8 @@
           {}
           (nrepl/message session {:op "eval" :code code})))
 
-(defn eval-quiet
-  "Evals without printing. Nrepl can split :out and :err across messages."
-  [session code ns-name]
-  (let [messages (nrepl/message session {:op "eval" :code code :ns ns-name :tool-eval "1"})]
-    (assoc (reduce merge {} messages)
-           :out (not-empty (apply str (keep :out messages)))
-           :err (not-empty (apply str (keep :err messages))))))
+(defn request [session message]
+  (reduce merge {} (nrepl/message session message)))
 
 (defn interrupt [session]
   (nrepl/message session {:op "interrupt"}))
@@ -33,5 +28,4 @@
         session-id (nrepl/new-session client)]
     {:conn conn
      :session (nrepl/client-session client :session session-id)
-     :session-id session-id
-     :tool-session (nrepl/client-session client)}))
+     :session-id session-id}))

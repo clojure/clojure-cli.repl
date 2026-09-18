@@ -2,7 +2,10 @@
   (:require
     [clojure.datafy :refer [datafy nav]]
     [clojure.pprint :as pprint]
-    [clojure.string :as str]))
+    [clojure.string :as str]
+    [nrepl.middleware :refer [set-descriptor!]]
+    [nrepl.misc :refer [response-for]]
+    [nrepl.transport :as transport]))
 
 (set! *warn-on-reflection* true)
 
@@ -118,8 +121,8 @@
        :leaf (pprint/write value :stream nil :length 100 :level 10)})))
 
 (defn respond
-  ([] (pr (render)))
-  ([extras] (pr (merge (render) extras))))
+  ([] (render))
+  ([extras] (merge (render) extras)))
 
 (defn start [session-id rows cols]
   (reset! view {:stack [{:label "*1" :value (datafy (session-binding session-id #'clojure.core/*1))}]
@@ -131,7 +134,7 @@
     (do (swap! view update :table not) (respond))
     (respond {:note "not tabular"})))
 
-(defn down [i]
+(defn in [i]
   (let [{:keys [stack page rows]} @view
         current-frame (peek stack)
         value (:value current-frame)
@@ -142,7 +145,7 @@
     (swap! view #(assoc % :stack new-stack :page 0))
     (respond)))
 
-(defn up []
+(defn out []
   (let [{:keys [stack]} @view]
     (if (= (count stack) 1)
       (respond)
@@ -183,3 +186,27 @@
         result (try {:defd (str (intern target-ns var-symbol (:value (peek stack))))}
                     (catch Exception e {:note (ex-message e)}))]
     (respond result)))
+
+(def op-fns
+  {"inspect-start"        (fn [msg] (start (:session msg) (:rows msg) (:cols msg)))
+   "inspect-in"           (fn [msg] (in (:idx msg)))
+   "inspect-out"          (fn [_]   (out))
+   "inspect-page"         (fn [msg] (page (:delta msg)))
+   "inspect-toggle-meta"  (fn [msg] (toggle-meta (:cursor msg)))
+   "inspect-toggle-table" (fn [_]   (toggle-table))
+   "inspect-def"          (fn [msg] (def-as (:session msg) (:name msg)))})
+
+(defn middleware [handler]
+  (fn [{:keys [op transport] :as msg}]
+    (if-let [f (op-fns op)]
+      (let [view (try (f msg)
+                      (catch Exception e (assoc (render) :note (ex-message e))))]
+        (transport/send transport (response-for msg :view (pr-str view) :status ["done"])))
+      (handler msg))))
+
+(set-descriptor! #'middleware
+  {:requires #{}
+   :expects  #{}
+   :handles  {"inspect-start" {} "inspect-in" {} "inspect-out" {}
+              "inspect-page" {} "inspect-toggle-meta" {}
+              "inspect-toggle-table" {} "inspect-def" {}}})

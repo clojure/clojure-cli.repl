@@ -31,16 +31,14 @@
 
 (defn middleware [handler]
   (fn [{:keys [op] :as msg}]
-    (let [eval? (= op "eval")
-          user-eval? (and eval? (not (:tool-eval msg)))]
-      (when eval?
-        (inspect/remember-session (:session msg)))
-      (handler (if user-eval?
-                 (cond-> msg
+    (if (= op "eval")
+      (do
+        (inspect/remember-session (:session msg))
+        (handler (cond-> msg
                    @evaluator (assoc :eval (str `hooked-eval))
                    @printer (assoc ::print/print (str `hooked-print))
-                   @catcher (assoc ::caught/caught (str `hooked-caught)))
-                 msg)))))
+                   @catcher (assoc ::caught/caught (str `hooked-caught)))))
+      (handler msg))))
 
 ;; Order the middleware after session resolution and before the nrepl eval handler
 (set-descriptor! #'middleware
