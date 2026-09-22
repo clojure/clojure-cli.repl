@@ -33,6 +33,31 @@ Reply:
 {:doc "clojure.core/map\n..." :status ["done"]}
 ```
 
+## auto-require
+
+Require libspecs in a namespace. The client sends it on startup and on each namespace change.
+
+Request:
+
+| Key | Value |
+|-----|-------|
+| `:op` | `"auto-require"` |
+| `:libspecs` | the libspecs to require, as an EDN string |
+| `:ns` | the namespace to require them in |
+
+Reply:
+
+| Key | Value |
+|-----|-------|
+| `:error` | the failure message, present only when a libspec fails to load |
+
+```clojure
+;; request
+{:op "auto-require" :libspecs "[[clojure.string :as s]]" :ns "user"}
+;; reply
+{:status ["done"]}
+```
+
 ## inspect
 
 The server is responsible for holding and modifying the state of the inspector.

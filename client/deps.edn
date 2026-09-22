@@ -1,4 +1,4 @@
-{:paths ["src"]
+{:paths ["src" "src-jvm"]
  :deps {org.clojure/clojure           {:mvn/version "1.12.5"}
         org.clojure/tools.reader      {:mvn/version "1.6.0"}
         org.clojure/tools.deps.config {:mvn/version "0.1.5"}
