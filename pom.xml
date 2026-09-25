@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
+         child.project.url.inherit.append.path="false">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>io.github.clojure</groupId>
+  <artifactId>clojure-cli.repl</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>clojure-cli.repl</name>
+  <description>Terminal REPL for the Clojure CLI.</description>
+  <url>https://github.com/clojure/clojure-cli.repl</url>
+
+  <parent>
+    <groupId>org.clojure</groupId>
+    <artifactId>pom.contrib</artifactId>
+    <version>1.4.3</version>
+  </parent>
+
+  <modules>
+    <module>client</module>
+    <module>server</module>
+  </modules>
+
+  <developers>
+    <developer>
+      <name>Jarrod Taylor</name>
+    </developer>
+  </developers>
+
+  <properties>
+    <clojure.version>1.12.5</clojure.version>
+    <clojure.warnOnReflection>true</clojure.warnOnReflection>
+    <clojure.source.dir>src</clojure.source.dir>
+    <clojure.testSource.dir>test</clojure.testSource.dir>
+  </properties>
+
+  <repositories>
+    <repository>
+      <id>clojars</id>
+      <url>https://repo.clojars.org/</url>
+    </repository>
+  </repositories>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>com.theoryinpractise</groupId>
+        <artifactId>clojure-maven-plugin</artifactId>
+        <configuration>
+          <sourceDirectories>
+            <sourceDirectory>${clojure.source.dir}</sourceDirectory>
+          </sourceDirectories>
+          <testSourceDirectories>
+            <testSourceDirectory>${clojure.testSource.dir}</testSourceDirectory>
+          </testSourceDirectories>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <scm child.scm.connection.inherit.append.path="false"
+       child.scm.developerConnection.inherit.append.path="false"
+       child.scm.url.inherit.append.path="false">
+    <connection>scm:git:git@github.com:clojure/clojure-cli.repl.git</connection>
+    <developerConnection>scm:git:git@github.com:clojure/clojure-cli.repl.git</developerConnection>
+    <url>git@github.com:clojure/clojure-cli.repl.git</url>
+    <tag>HEAD</tag>
+  </scm>
+</project>

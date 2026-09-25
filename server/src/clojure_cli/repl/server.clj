@@ -184,8 +184,13 @@
 (defn spawn-client
   "Run the client in its own JVM so its deps stay off the server's classpath."
   ^Process [port]
-  ;; TODO invoking client with local alias until we have a published coord
-  (let [^java.util.List cmd ["clojure" "-M:attach" (str port)]]
+  (let [version (with-open [rdr (io/reader (io/resource "META-INF/maven/io.github.clojure/clojure-cli.repl-server/pom.properties"))]
+                  (.getProperty (doto (java.util.Properties.) (.load rdr)) "version"))
+        ^java.util.List cmd ["clojure" "-Sdeps"
+                             (pr-str {:aliases {:attach {:replace-paths []
+                                                         :replace-deps {'io.github.clojure/clojure-cli.repl-client {:mvn/version version}}
+                                                         :main-opts ["-m" "clojure-cli.repl.client"]}}})
+                             "-M:attach" (str port)]]
     (-> (ProcessBuilder. cmd)
         .inheritIO
         .start)))

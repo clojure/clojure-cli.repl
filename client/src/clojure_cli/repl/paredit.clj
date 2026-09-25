@@ -76,6 +76,6 @@
 
 (defn install [config rdr]
   (doseq [op-key (keys ops)
-          :let [keyseq (config op-key)]
+          :let [keyseq (get config op-key)]
           :when keyseq]
     (api/bind-key rdr (api/key-sequence keyseq) (api/widget #(edit rdr op-key)))))

@@ -9,11 +9,4 @@
   :attach
   {:replace-paths []
    :replace-deps {clojure-cli.repl/client {:local/root "client"}}
-   :main-opts ["-m" "clojure-cli.repl.client"]}
-
-  ;; terminal repl
-  ;; After the server starts the client gets spawned
-  :repl
-  {:replace-paths []
-   :replace-deps {clojure-cli.repl/server {:local/root "server"}}
-   :main-opts ["-m" "clojure-cli.repl.server" "repl"]}}}
+   :main-opts ["-m" "clojure-cli.repl.client"]}}}

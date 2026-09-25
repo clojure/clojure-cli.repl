@@ -10,20 +10,20 @@ off the project classpath.
 
 ## Install
 
-Until official release, add these aliases to your user `deps.edn`:
+Add these aliases to your user `deps.edn`:
 
 ```clojure
 {:aliases
- {:repl   {:replace-paths [] :main-opts ["-m" "clojure-cli.repl.server" "repl"]
-           :replace-deps {clojure-cli.repl/server {:git/url "https://codeberg.org/JarrodCTaylor/clj-line.git"
-                                            :git/sha "96a43387ad0be4df691a7e07da18e604f1206501" :deps/root "server"}}}
-  :attach {:replace-paths [] :main-opts ["-m" "clojure-cli.repl.client"]
-           :replace-deps {clojure-cli.repl/client {:git/url "https://codeberg.org/JarrodCTaylor/clj-line.git"
-                                            :git/sha "96a43387ad0be4df691a7e07da18e604f1206501" :deps/root "client"}}}
-  :serve  {:replace-paths [] :main-opts ["-m" "clojure-cli.repl.server"]
-           :replace-deps {clojure-cli.repl/server {:git/url "https://codeberg.org/JarrodCTaylor/clj-line.git"
-                                            :git/sha "96a43387ad0be4df691a7e07da18e604f1206501" :deps/root "server"}}}}}
+ {:repl   {:extra-deps {io.github.clojure/clojure-cli.repl-server {:mvn/version "0.1.0"}}
+           :main-opts ["-m" "clojure-cli.repl.server" "repl"]}
+  :serve  {:extra-deps {io.github.clojure/clojure-cli.repl-server {:mvn/version "0.1.0"}}
+           :main-opts ["-m" "clojure-cli.repl.server"]}
+  :attach {:replace-paths []
+           :replace-deps {io.github.clojure/clojure-cli.repl-client {:mvn/version "0.1.0"}}
+           :main-opts ["-m" "clojure-cli.repl.client"]}}}
 ```
+
+The server runs on the project classpath. The client runs in its own JVM with only its own deps.
 
 **Note: Java 17+ is required**
 
@@ -40,7 +40,8 @@ as a reference or starting point. Copy it into the project dir, or into
 `~/.clojure` for use in all projects:
 
 ```
-cp -R clj-line/examples/.cljconf .
+git clone https://github.com/clojure/clojure-cli.repl.git
+cp -R clojure-cli.repl/examples/.cljconf .
 ```
 
 ## Demos
@@ -85,3 +86,17 @@ The REPL is highly customizable. Behavior can be [configured](doc/configuration.
 ```
 cd client && clojure -M:test
 ```
+
+## Copyright and License
+
+Copyright © 2026
+
+All rights reserved. The use and
+distribution terms for this software are covered by the
+[Eclipse Public License 1.0] which can be found in the file
+LICENSE at the root of this distribution. By using this software
+in any fashion, you are agreeing to be bound by the terms of this
+license. You must not remove this notice, or any other, from this
+software.
+
+[Eclipse Public License 1.0]: https://opensource.org/license/epl-1-0

@@ -22,8 +22,8 @@ An [example config](../examples/.cljconf) is provided as a reference or starting
 Copy it into the project dir, or into `~/.clojure` for use in all projects:
 
 ```
-git clone https://codeberg.org/JarrodCTaylor/clj-line.git
-cp -R clj-line/examples/.cljconf .
+git clone https://github.com/clojure/clojure-cli.repl.git
+cp -R clojure-cli.repl/examples/.cljconf .
 ```
 
 Once in place run `clojure -M:repl` to try it out.
