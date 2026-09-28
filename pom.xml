@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
-         child.project.url.inherit.append.path="false">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" child.project.url.inherit.append.path="false">
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.github.clojure</groupId>
   <artifactId>clojure-cli.repl</artifactId>
-  <version>0.1.0-SNAPSHOT</version>
+  <version>0.1.0</version>
   <packaging>pom</packaging>
   <name>clojure-cli.repl</name>
   <description>Terminal REPL for the Clojure CLI.</description>
@@ -58,12 +57,10 @@
     </plugins>
   </build>
 
-  <scm child.scm.connection.inherit.append.path="false"
-       child.scm.developerConnection.inherit.append.path="false"
-       child.scm.url.inherit.append.path="false">
+  <scm child.scm.connection.inherit.append.path="false" child.scm.developerConnection.inherit.append.path="false" child.scm.url.inherit.append.path="false">
     <connection>scm:git:git@github.com:clojure/clojure-cli.repl.git</connection>
     <developerConnection>scm:git:git@github.com:clojure/clojure-cli.repl.git</developerConnection>
     <url>git@github.com:clojure/clojure-cli.repl.git</url>
-    <tag>HEAD</tag>
+    <tag>v0.1.0</tag>
   </scm>
 </project>
