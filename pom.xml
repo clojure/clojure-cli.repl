@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.github.clojure</groupId>
   <artifactId>clojure-cli.repl</artifactId>
-  <version>0.1.0</version>
+  <version>0.1.1-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>clojure-cli.repl</name>
   <description>Terminal REPL for the Clojure CLI.</description>
@@ -61,6 +61,6 @@
     <connection>scm:git:git@github.com:clojure/clojure-cli.repl.git</connection>
     <developerConnection>scm:git:git@github.com:clojure/clojure-cli.repl.git</developerConnection>
     <url>git@github.com:clojure/clojure-cli.repl.git</url>
-    <tag>v0.1.0</tag>
+    <tag>HEAD</tag>
   </scm>
 </project>
