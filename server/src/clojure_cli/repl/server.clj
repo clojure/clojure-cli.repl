@@ -116,16 +116,21 @@
    :handles {"auto-require" {}}})
 
 (defn resolve-middleware
-  "Resolves a middleware symbol to a seq of vars.
+  "Resolves a middleware symbol to a seq of vars. A symbol with ^:optional
+  resolves to none when its namespace or var is not found.
   Adds a default nREPL descriptor when the var has none."
   [sym]
-  (let [v (or (requiring-resolve sym)
-              (throw (ex-info (str "clojure-cli.repl: :middleware var not found: " sym) {:middleware sym})))]
-    (if (sequential? @v)
-      (mapcat resolve-middleware @v)
-      (do (when-not (:nrepl.middleware/descriptor (meta v))
-            (middleware/set-descriptor! v {:requires #{} :expects #{"eval"} :handles {}}))
-          [v]))))
+  (let [v (if (:optional (meta sym))
+            (try (requiring-resolve sym)
+                 (catch java.io.FileNotFoundException _ nil))
+            (or (requiring-resolve sym)
+                (throw (ex-info (str "clojure-cli.repl: :middleware var not found: " sym) {:middleware sym}))))]
+    (when v
+      (if (sequential? @v)
+        (mapcat resolve-middleware @v)
+        (do (when-not (:nrepl.middleware/descriptor (meta v))
+              (middleware/set-descriptor! v {:requires #{} :expects #{"eval"} :handles {}}))
+            [v])))))
 
 (defn start [{:keys [middleware port] :as config}]
   (when-let [vars (not-empty (configured-dynamic-vars config))]

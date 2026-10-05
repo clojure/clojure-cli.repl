@@ -19,6 +19,15 @@ party middleware (e.g., cider-nrepl) needs the dep added to the
 {:aliases {:clojure-cli.repl/server {:extra-deps {cider/cider-nrepl {:mvn/version "0.62.2"}}}}}
 ```
 
+A symbol marked `^:optional` is used when its namespace and var are found, and
+skipped when they are not. Any unmarked symbol that is not found is an error,
+and the REPL will not start.
+
+```clojure
+;; .cljconf/org.clojure/clojure-cli.repl.edn
+{:middleware [^:optional org.corfield.rephrase.nrepl/wrap-rephrase]}
+```
+
 ## Adding data to responses
 
 `clojure-cli.repl.middleware/assoc-response` is a convenience function to
