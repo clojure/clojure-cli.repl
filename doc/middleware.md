@@ -7,6 +7,18 @@
 {:middleware [dev.timing/middleware dev.heap/middleware]}
 ```
 
+A symbol can also name a var that holds a vector of middleware symbols, such as
+`cider.nrepl/cider-middleware`.
+
+Custom middleware you write lives in the `src` dir next to the config file. Any 3rd
+party middleware (e.g., cider-nrepl) needs the dep added to the
+`:clojure-cli.repl/server` alias, see [Dependencies](configuration.md#dependencies).
+
+```clojure
+;; .cljconf/org.clojure/clojure-cli.repl/deps.edn
+{:aliases {:clojure-cli.repl/server {:extra-deps {cider/cider-nrepl {:mvn/version "0.62.2"}}}}}
+```
+
 ## Adding data to responses
 
 `clojure-cli.repl.middleware/assoc-response` is a convenience function to

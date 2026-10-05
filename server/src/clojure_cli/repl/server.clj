@@ -116,20 +116,22 @@
    :handles {"auto-require" {}}})
 
 (defn resolve-middleware
-  "Resolves a middleware symbol to its var.
+  "Resolves a middleware symbol to a seq of vars.
   Adds a default nREPL descriptor when the var has none."
   [sym]
   (let [v (or (requiring-resolve sym)
               (throw (ex-info (str "clojure-cli.repl: :middleware var not found: " sym) {:middleware sym})))]
-    (when-not (:nrepl.middleware/descriptor (meta v))
-      (middleware/set-descriptor! v {:requires #{} :expects #{"eval"} :handles {}}))
-    v))
+    (if (sequential? @v)
+      (mapcat resolve-middleware @v)
+      (do (when-not (:nrepl.middleware/descriptor (meta v))
+            (middleware/set-descriptor! v {:requires #{} :expects #{"eval"} :handles {}}))
+          [v]))))
 
 (defn start [{:keys [middleware port] :as config}]
   (when-let [vars (not-empty (configured-dynamic-vars config))]
     (alter-var-root #'nrepl-config/config assoc :dynamic-vars vars))
   (hooks/install config)
-  (let [extra (mapv resolve-middleware middleware)
+  (let [extra (mapcat resolve-middleware middleware)
         handler (apply server/default-handler #'hooks/middleware #'doc-middleware #'auto-require-middleware #'inspect/middleware extra)
         srv (server/start-server :port (or port 0) :handler handler)]
     (spit ".nrepl-port" (str (:port srv)))
