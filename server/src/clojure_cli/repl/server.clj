@@ -189,6 +189,7 @@
         ^java.util.List cmd ["clojure" "-Sdeps"
                              (pr-str {:aliases {:attach {:replace-paths []
                                                          :replace-deps {'io.github.clojure/clojure-cli.repl-client {:mvn/version version}}
+                                                         :jvm-opts ["--enable-native-access=ALL-UNNAMED"]
                                                          :main-opts ["-m" "clojure-cli.repl.client"]}}})
                              "-M:attach" (str port)]]
     (-> (ProcessBuilder. cmd)

@@ -20,6 +20,7 @@ Add these aliases to your user `deps.edn`:
            :main-opts ["-m" "clojure-cli.repl.server"]}
   :attach {:replace-paths []
            :replace-deps {io.github.clojure/clojure-cli.repl-client {:mvn/version "0.1.0"}}
+           :jvm-opts ["--enable-native-access=ALL-UNNAMED"]
            :main-opts ["-m" "clojure-cli.repl.client"]}}}
 ```
 

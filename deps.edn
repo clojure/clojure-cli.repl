@@ -9,4 +9,5 @@
   :attach
   {:replace-paths []
    :replace-deps {clojure-cli.repl/client {:local/root "client"}}
+   :jvm-opts ["--enable-native-access=ALL-UNNAMED"]
    :main-opts ["-m" "clojure-cli.repl.client"]}}}
