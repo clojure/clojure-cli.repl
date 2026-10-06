@@ -14,12 +14,12 @@ Add these aliases to your user `deps.edn`:
 
 ```clojure
 {:aliases
- {:repl   {:extra-deps {io.github.clojure/clojure-cli.repl-server {:mvn/version "0.1.0"}}
+ {:repl   {:extra-deps {io.github.clojure/clojure-cli.repl-server {:mvn/version "0.1.1"}}
            :main-opts ["-m" "clojure-cli.repl.server" "repl"]}
-  :serve  {:extra-deps {io.github.clojure/clojure-cli.repl-server {:mvn/version "0.1.0"}}
+  :serve  {:extra-deps {io.github.clojure/clojure-cli.repl-server {:mvn/version "0.1.1"}}
            :main-opts ["-m" "clojure-cli.repl.server"]}
   :attach {:replace-paths []
-           :replace-deps {io.github.clojure/clojure-cli.repl-client {:mvn/version "0.1.0"}}
+           :replace-deps {io.github.clojure/clojure-cli.repl-client {:mvn/version "0.1.1"}}
            :jvm-opts ["--enable-native-access=ALL-UNNAMED"]
            :main-opts ["-m" "clojure-cli.repl.client"]}}}
 ```
