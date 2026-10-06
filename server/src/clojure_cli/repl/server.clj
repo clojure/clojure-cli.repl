@@ -2,7 +2,6 @@
   (:require
     [clojure.data.json :as json]
     [clojure.edn :as edn]
-    [clojure.java.doc.api :as jdoc]
     [clojure.java.io :as io]
     [clojure.java.shell :as sh]
     [clojure.string :as str]
@@ -72,7 +71,7 @@
     (doc-block (str ns "/" name) arglists doc)))
 
 (defn java-doc [sym]
-  (try (with-out-str (jdoc/javadoc-fn (str sym) nil))
+  (try (with-out-str ((requiring-resolve 'clojure.java.doc.api/javadoc-fn) (str sym) nil))
        (catch Exception _ nil)))
 
 (defn doc-for [token ns-name]
@@ -203,7 +202,13 @@
         .inheritIO
         .start)))
 
+(defn check-clojure-version []
+  (when (< (:minor *clojure-version*) 12)
+    (println "clojure-cli.repl requires Clojure 1.12 or later, started with" (clojure-version))
+    (System/exit 1)))
+
 (defn -main [& args]
+  (check-clojure-version)
   (let [srv (start (load-config 'org.clojure/clojure-cli.repl))]
     (.addShutdownHook (Runtime/getRuntime)
                       (Thread. ^Runnable (fn [] (stop srv)))) ;; on shutdown remove .nrepl-port

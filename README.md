@@ -26,7 +26,7 @@ Add these aliases to your user `deps.edn`:
 
 The server runs on the project classpath. The client runs in its own JVM with only its own deps.
 
-**Note: Java 17+ is required**
+**Note: Java 17+ and Clojure 1.12+ are required**
 
 ## Run
 
