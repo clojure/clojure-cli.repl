@@ -46,7 +46,7 @@
               (map (fn [v] [(str (:ns v) "/" (:name v))
                             (update v :arglists (fn [arglists] (mapv #(str "[" % "]") arglists)))]))
               (:vars (json/read-str (slurp f) :key-fn keyword))))
-      (catch Exception _ nil))))
+      (catch Throwable _ nil))))
 
 (defn clojuredocs-examples [fq]
   (when-let [examples (seq (:examples (get @clojuredocs-index fq)))]
@@ -57,7 +57,7 @@
   (str/join "\n" (remove str/blank? [fq-name (str/join " " arglists) doc])))
 
 (defn resolved [sym]
-  (try (ns-resolve *ns* sym) (catch Exception _ nil)))
+  (try (ns-resolve *ns* sym) (catch Throwable _ nil)))
 
 (defn clojuredocs-doc [sym]
   (let [fq (if-let [{:keys [ns name]} (some-> (resolved sym) meta)]
@@ -72,7 +72,7 @@
 
 (defn java-doc [sym]
   (try (with-out-str ((requiring-resolve 'clojure.java.doc.api/javadoc-fn) (str sym) nil))
-       (catch Exception _ nil)))
+       (catch Throwable _ nil)))
 
 (defn doc-for [token ns-name]
   (binding [*ns* (the-ns (symbol ns-name))]
@@ -97,7 +97,7 @@
   (binding [*ns* (the-ns (symbol ns-name))]
     (try (apply require (edn/read-string libspecs))
          nil
-         (catch Exception e (ex-message e)))))
+         (catch Throwable e (ex-message e)))))
 
 (defn auto-require-middleware [handler]
   (fn [{:keys [op libspecs ns transport] :as msg}]

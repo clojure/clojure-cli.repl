@@ -184,7 +184,7 @@
         target-ns (session-binding session-id #'clojure.core/*ns*)
         var-symbol (with-meta (symbol var-name) {:browse-path (mapv :key (rest stack))})
         result (try {:defd (str (intern target-ns var-symbol (:value (peek stack))))}
-                    (catch Exception e {:note (ex-message e)}))]
+                    (catch Throwable e {:note (ex-message e)}))]
     (respond result)))
 
 (def op-fns
@@ -200,7 +200,7 @@
   (fn [{:keys [op transport] :as msg}]
     (if-let [f (op-fns op)]
       (let [view (try (f msg)
-                      (catch Exception e (assoc (render) :note (ex-message e))))]
+                      (catch Throwable e (assoc (render) :note (ex-message e))))]
         (transport/send transport (response-for msg :view (pr-str view) :status ["done"])))
       (handler msg))))
 
