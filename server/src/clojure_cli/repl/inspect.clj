@@ -5,7 +5,8 @@
     [clojure.string :as str]
     [nrepl.middleware :refer [set-descriptor!]]
     [nrepl.misc :refer [response-for]]
-    [nrepl.transport :as transport]))
+    [nrepl.transport :as transport]
+    [clojure-cli.repl.watch :as watch]))
 
 (set! *warn-on-reflection* true)
 
@@ -13,17 +14,6 @@
 (def max-entries 1000)
 (def min-col-width 12)
 (def separator " · ")
-
-(def sessions
-  "Session id to session atom of eval bindings."
-  (atom {}))
-
-(defn remember-session [session]
-  (swap! sessions assoc (:id (meta session)) session))
-
-(defn session-binding [session-id dynamic-var]
-  (when-let [session (get @sessions session-id)] ;; prevents NPE if you inspect in a fresh repl
-    (get @session dynamic-var)))
 
 (defn entries [value]
   (let [capped-entries (take max-entries value)
@@ -124,8 +114,8 @@
   ([] (render))
   ([extras] (merge (render) extras)))
 
-(defn start [session-id rows cols]
-  (reset! view {:stack [{:label "*1" :value (datafy (session-binding session-id #'clojure.core/*1))}]
+(defn start [rows cols]
+  (reset! view {:stack [{:label "*1" :value (datafy (watch/latest-binding #'clojure.core/*1))}]
                 :page 0 :rows rows :cols cols :table true})
   (respond))
 
@@ -179,22 +169,22 @@
               (swap! view #(assoc % :stack new-stack :page 0))
               (respond)))))
 
-(defn def-as [session-id var-name]
+(defn def-as [var-name]
   (let [{:keys [stack]} @view
-        target-ns (session-binding session-id #'clojure.core/*ns*)
+        target-ns (watch/latest-binding #'clojure.core/*ns*)
         var-symbol (with-meta (symbol var-name) {:browse-path (mapv :key (rest stack))})
         result (try {:defd (str (intern target-ns var-symbol (:value (peek stack))))}
                     (catch Throwable e {:note (ex-message e)}))]
     (respond result)))
 
 (def op-fns
-  {"inspect-start"        (fn [msg] (start (:session msg) (:rows msg) (:cols msg)))
+  {"inspect-start"        (fn [msg] (start (:rows msg) (:cols msg)))
    "inspect-in"           (fn [msg] (in (:idx msg)))
    "inspect-out"          (fn [_]   (out))
    "inspect-page"         (fn [msg] (page (:delta msg)))
    "inspect-toggle-meta"  (fn [msg] (toggle-meta (:cursor msg)))
    "inspect-toggle-table" (fn [_]   (toggle-table))
-   "inspect-def"          (fn [msg] (def-as (:session msg) (:name msg)))})
+   "inspect-def"          (fn [msg] (def-as (:name msg)))})
 
 (defn middleware [handler]
   (fn [{:keys [op transport] :as msg}]

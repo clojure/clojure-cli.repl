@@ -9,18 +9,22 @@
   (when err (binding [*out* *err*] (print err) (flush)))
   (when value (println value)))
 
-(defn eval-code [session code]
+(defn eval-code [session code ns-name]
   (reduce (fn [acc res]
             (render res)
             (merge acc res))
           {}
-          (nrepl/message session {:op "eval" :code code})))
+          (nrepl/message session {:op "eval" :code code :ns ns-name})))
 
 (defn request [session message]
   (reduce merge {} (nrepl/message session message)))
 
 (defn interrupt [session]
   (nrepl/message session {:op "interrupt"}))
+
+(defn watch [port session-id]
+  (nrepl/message (nrepl/client (nrepl/connect :port port) Long/MAX_VALUE)
+                 {:op "watch" :session session-id}))
 
 (defn connect [port]
   (let [conn (nrepl/connect :port port)

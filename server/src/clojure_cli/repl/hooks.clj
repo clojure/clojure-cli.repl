@@ -1,7 +1,6 @@
 (ns clojure-cli.repl.hooks
   (:require
     [clojure.main :as main]
-    [clojure-cli.repl.inspect :as inspect]
     [nrepl.middleware :refer [set-descriptor!]]
     [nrepl.middleware.caught :as caught]
     [nrepl.middleware.print :as print]))
@@ -32,12 +31,10 @@
 (defn middleware [handler]
   (fn [{:keys [op] :as msg}]
     (if (= op "eval")
-      (do
-        (inspect/remember-session (:session msg))
-        (handler (cond-> msg
-                   @evaluator (assoc :eval (str `hooked-eval))
-                   @printer (assoc ::print/print (str `hooked-print))
-                   @catcher (assoc ::caught/caught (str `hooked-caught)))))
+      (handler (cond-> msg
+                 @evaluator (assoc :eval (str `hooked-eval))
+                 @printer (assoc ::print/print (str `hooked-print))
+                 @catcher (assoc ::caught/caught (str `hooked-caught))))
       (handler msg))))
 
 ;; Order the middleware after session resolution and before the nrepl eval handler

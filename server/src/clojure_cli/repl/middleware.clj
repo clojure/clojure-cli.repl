@@ -10,7 +10,7 @@
   [f]
   (fn [handler]
     (fn [{:keys [op transport] :as msg}]
-      (if (= op "eval")
+      (if (#{"eval" "load-file"} op)
         (handler (assoc msg :transport
                         (reify transport/Transport
                           (recv [_] (transport/recv transport))

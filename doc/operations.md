@@ -66,7 +66,7 @@ The server replies with a view for the client to render.
 
 ### inspect-start
 
-Start the inspector on `*1` of the requesting session.
+Start the inspector on `*1` of the session with the most recent evaluation, from any client.
 
 Request:
 
@@ -131,7 +131,7 @@ Request:
 
 ### inspect-def
 
-Define the current value as a var named `:name` in the namespace of the requesting session.
+Define the current value as a var named `:name` in the namespace of the session with the most recent evaluation.
 
 Request:
 

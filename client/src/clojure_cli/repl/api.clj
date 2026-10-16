@@ -37,7 +37,7 @@
               out (assoc :out (str (:out acc) out))
               err (assoc :err (str (:err acc) err))))
           {}
-          (nrepl/message @session {:op "eval" :code code})))
+          (nrepl/message @session {:op "eval" :code code :ns @current-ns})))
 
 (defn terminal
   "The running JLine Terminal."

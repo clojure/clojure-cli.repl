@@ -1,12 +1,17 @@
 # clojure-cli.repl
 
-A REPL for the Clojure CLI featuring multi-line editing with proper indentation,
-bracket highlighting, structural editing, inline eval, doc lookup for Clojure
-and Java, a data inspector, configurable prompts, keybindings, and much more.
+A terminal REPL for the Clojure CLI that you can use on its own, with multi-line
+editing, structural editing, inline eval, doc lookup, and a data inspector. You
+can also use it with your editor, where evaluations sent from the editor show in
+the terminal with their output, ready to inspect.
 
-It runs as two processes. An nREPL server that evaluates code, and a JLine client that
-provides a terminal prompt. Separate processes keep the client dependencies
-off the project classpath.
+## Try it
+
+To try it with no setup, run this in any project directory:
+
+```
+clojure -Sdeps '{:deps {io.github.clojure/clojure-cli.repl-server {:mvn/version "0.1.1"}}}' -M -m clojure-cli.repl.server repl
+```
 
 ## Install
 
@@ -24,7 +29,9 @@ Add these aliases to your user `deps.edn`:
            :main-opts ["-m" "clojure-cli.repl.client"]}}}
 ```
 
-The server runs on the project classpath. The client runs in its own JVM with only its own deps.
+The REPL runs as two processes. An nREPL server on the project classpath evaluates
+code. A JLine client in its own JVM provides the terminal prompt, which keeps the
+client dependencies off the project classpath.
 
 **Note: Java 17+ and Clojure 1.12+ are required**
 
@@ -33,6 +40,8 @@ The server runs on the project classpath. The client runs in its own JVM with on
 * `clojure -M:repl` starts a server that spawns a client
 * `clojure -M:serve` starts a server, writing its port to `.nrepl-port`
 * `clojure -M:attach [port]` attaches a client, reading `.nrepl-port` when no port is given
+
+Editors connect through `.nrepl-port`. See [using the REPL with an editor](doc/editors.md).
 
 ## Example Config
 
@@ -67,6 +76,10 @@ Browse the last result, drill into nested data:
 
 ![inspector gif](doc/images/inspect.gif)
 
+Evaluations sent from an editor show in the terminal:
+
+![editor gif](doc/images/editor.gif)
+
 ## Configuration
 
 The REPL is highly customizable. Behavior can be [configured](doc/configuration.md) at the user level, project level, or both.
@@ -79,6 +92,7 @@ The REPL is highly customizable. Behavior can be [configured](doc/configuration.
 | `:paredit/<op>` `:bracket-pairs` `:eval-form-at-cursor` `:doc-at-cursor` | Editing | [Structural editing](doc/editing.md) |
 | `:inspect` | Browse the last result | [Inspector](doc/inspector.md) |
 | `:eval-hook` `:print-hook` `:caught-hook` | Server hooks | [Hooks](doc/hooks.md) |
+| `:follow-editor-ns` | Editor evaluations | [Editors](doc/editors.md) |
 | `:history` `:auto-require` `:port` and dynamic vars | Session behavior | [Configuration](doc/configuration.md) |
 
 

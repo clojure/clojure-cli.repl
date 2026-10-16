@@ -1,6 +1,6 @@
 # Inspector
 
-The `:inspect` config key binds a key to open the inspector on the last result `*1`:
+The `:inspect` config key binds a key to open the inspector on the last result `*1`, from the REPL or an [editor](editors.md):
 
 ```clojure
 ;; .cljconf/org.clojure/clojure-cli.repl.edn

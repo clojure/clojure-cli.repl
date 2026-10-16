@@ -12,7 +12,8 @@
     [nrepl.server :as server]
     [nrepl.transport :as transport]
     [clojure-cli.repl.hooks :as hooks]
-    [clojure-cli.repl.inspect :as inspect]))
+    [clojure-cli.repl.inspect :as inspect]
+    [clojure-cli.repl.watch :as watch]))
 
 (set! *warn-on-reflection* true)
 
@@ -128,7 +129,7 @@
       (if (sequential? @v)
         (mapcat resolve-middleware @v)
         (do (when-not (:nrepl.middleware/descriptor (meta v))
-              (middleware/set-descriptor! v {:requires #{} :expects #{"eval"} :handles {}}))
+              (middleware/set-descriptor! v {:requires #{#'watch/middleware} :expects #{"eval"} :handles {}}))
             [v])))))
 
 (defn start [{:keys [middleware port] :as config}]
@@ -136,7 +137,7 @@
     (alter-var-root #'nrepl-config/config assoc :dynamic-vars vars))
   (hooks/install config)
   (let [extra (mapcat resolve-middleware middleware)
-        handler (apply server/default-handler #'hooks/middleware #'doc-middleware #'auto-require-middleware #'inspect/middleware extra)
+        handler (apply server/default-handler #'hooks/middleware #'doc-middleware #'auto-require-middleware #'inspect/middleware #'watch/middleware extra)
         srv (server/start-server :port (or port 0) :handler handler)]
     (spit ".nrepl-port" (str (:port srv)))
     srv))
@@ -165,8 +166,8 @@
 
 (defn load-config
   "Puts the config classpath on a DynamicClassLoader installed as the thread's
-   context loader. A new loader is required because the app loader cannot be
-   extended. Returns the config map."
+   context loader, with its tagged literals. A new loader is required because
+   the app loader cannot be extended. Returns the config map."
   [lib]
   (let [entries (distinct (mapcat #(config-classpath % lib) [:project :user]))]
     (when (seq entries)
@@ -174,7 +175,8 @@
             loader (clojure.lang.DynamicClassLoader. (.getContextClassLoader thread))]
         (doseq [^java.io.File f entries]
           (.addURL loader (.toURL (.toURI f))))
-        (.setContextClassLoader thread loader))))
+        (.setContextClassLoader thread loader)
+        (#'clojure.core/load-data-readers))))
   (dc/config lib))
 
 (defn ignore-interrupt
@@ -212,7 +214,7 @@
   (let [srv (start (load-config 'org.clojure/clojure-cli.repl))]
     (.addShutdownHook (Runtime/getRuntime)
                       (Thread. ^Runnable (fn [] (stop srv)))) ;; on shutdown remove .nrepl-port
-    (println "nREPL server listening on port" (:port srv))
+    (println "nREPL server started on port" (:port srv))
     (if (= "repl" (first args))
       (do
         (ignore-interrupt)

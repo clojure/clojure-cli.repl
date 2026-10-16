@@ -13,8 +13,9 @@
   (:import
     [org.jline.terminal Terminal Terminal$Signal Terminal$SignalHandler TerminalBuilder]
     [org.jline.reader Buffer LineReader LineReaderBuilder Reference Widget EndOfFileException UserInterruptException]
+    [org.jline.reader.impl LineReaderImpl]
     [org.jline.keymap KeyMap BindingReader]
-    [org.jline.utils Display InfoCmp$Capability]))
+    [org.jline.utils AttributedString Display InfoCmp$Capability]))
 
 (set! *warn-on-reflection* true)
 
@@ -356,11 +357,61 @@
     (when-let [error (:error (nrepl/request @api/session {:op "auto-require" :libspecs (pr-str libspecs) :ns ns-name}))]
       (println "clojure-cli.repl: :auto-require failed:" error))))
 
+(defn enter-ns [ns-name libspecs]
+  (when (and ns-name (not= ns-name @api/current-ns))
+    (reset! api/current-ns ns-name)
+    (auto-require ns-name libspecs)))
+
+(defn align [code column width]
+  (str/replace code
+               (re-pattern (str "\n {0," (dec column) "}"))
+               (str "\n" (apply str (repeat width \space)))))
+
+(defn prompt-in [prompt-fn ns-name]
+  (let [own-ns @api/current-ns]
+    (reset! api/current-ns (or ns-name own-ns)) ; load-file doesn't have a ns
+    (try (vec (prompt-fn))
+         (finally (reset! api/current-ns own-ns)))))
+
+(defn print-echo [{:keys [code column] ns-name :ns} prompt-fn]
+  (let [prompt (prompt-in prompt-fn ns-name)
+        width (.columnLength ^AttributedString (last (.columnSplitLength (color/build-attrib-str prompt) Integer/MAX_VALUE)))]
+    (api/print-above (conj prompt {:text (align code (or column 1) width) :style {:fg :bright-black}}))))
+
+(defn refresh-prompt [response ^LineReaderImpl rdr prompt-fn libspecs follow-ns?]
+  (reset! api/last-response response)
+  (when follow-ns? (enter-ns (:ns response) libspecs))
+  (.setPrompt rdr (render-prompt prompt-fn))
+  (.redisplay rdr))
+
+(defn show-reply [evals {:keys [eval-id code out err value status] :as reply} rdr prompt-fn libspecs follow-ns?]
+  (when code (print-echo reply prompt-fn))
+  (when-let [text (or out err value)] (api/print-above [{:text (str/trim-newline text)}]))
+  (let [merged (merge (get evals eval-id) reply)]
+    (if (some #{"eval-done"} status)
+      (do (refresh-prompt merged rdr prompt-fn libspecs follow-ns?)
+          (dissoc evals eval-id))
+      (assoc evals eval-id merged))))
+
+(defn watch-evals
+  "Runs on its own thread since the main thread is waiting for input.
+   Continues to run until the connection is closed.
+   Replies are collected until each eval is done."
+  [port session-id rdr prompt-fn libspecs follow-ns?]
+  (future
+    (reduce (fn [evals reply]
+              (try (show-reply evals reply rdr prompt-fn libspecs follow-ns?)
+                   (catch Throwable e
+                     (api/print-above [{:text (str "clojure-cli.repl: watch: " (ex-message e))}])
+                     evals)))
+            {}
+            (nrepl/watch port session-id))))
+
 (defn -main [& args]
   (let [config (host/load-config 'org.clojure/clojure-cli.repl)
         prompt-fn (or (host/resolve-prompt config) default-prompt)
         port (Integer/parseInt (str/trim (or (first args) (slurp ".nrepl-port"))))
-        {:keys [session]} (nrepl/connect port)
+        {:keys [session session-id]} (nrepl/connect port)
         libspecs (:auto-require config)
         rdr (build-reader config (history-file 'org.clojure/clojure-cli.repl config))]
     (reset! api/reader rdr)
@@ -379,20 +430,18 @@
                (handle [_ _sig]
                  (nrepl/interrupt session))))
     (println "connected to nREPL on" port)
-    (auto-require "user" libspecs)
-    (loop [ns "user"]
-      (reset! api/current-ns ns)
+    (watch-evals port session-id rdr prompt-fn libspecs (:follow-editor-ns config))
+    (auto-require @api/current-ns libspecs)
+    (loop []
       (let [line (try (.readLine rdr (render-prompt prompt-fn))
                       (catch UserInterruptException _ "") ; ctrl-c
                       (catch EndOfFileException _ nil))] ; ctrl-d
         (when line
-          (let [new-ns (if (str/blank? line)
-                         ns
-                         (let [resp (nrepl/eval-code session line)]
-                           (reset! api/last-response resp)
-                           (or (:ns resp) ns)))]
-            (when (not= new-ns ns) (auto-require new-ns libspecs))
-            (recur new-ns)))))
+          (when-not (str/blank? line)
+            (let [resp (nrepl/eval-code session line @api/current-ns)]
+              (reset! api/last-response resp)
+              (enter-ns (:ns resp) libspecs)))
+          (recur))))
     ;; jline and the nrepl client leave non-daemon threads behind
     (.close (.getTerminal rdr))
     (System/exit 0)))
