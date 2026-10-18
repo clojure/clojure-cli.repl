@@ -49,6 +49,7 @@ The scope column names the process a key configures. Either the JLine client or 
 | `:eval-hook` | server | [qualified symbol](#user-code) | [Wraps eval](hooks.md). | none |
 | `:print-hook` | server | [qualified symbol](#user-code) | [Wraps result printing](hooks.md). | none |
 | `:caught-hook` | server | [qualified symbol](#user-code) | [Wraps error reporting](hooks.md). | none |
+| `:init` | server | [qualified symbol](#user-code) | [Runs once at startup](#init). | none |
 | `:port` | server | int | nREPL port. | a free port |
 | `:print-length` | server | int | `*print-length*` | `nil` |
 | `:print-level` | server | int | `*print-level*` | `nil` |
@@ -84,6 +85,28 @@ navigate with up/down arrows.
 The aliases and refers defined here will always be available. The REPL requires them
 in the starting namespace and again in each namespace it enters. Libspecs resolve on
 the server classpath, which includes the config's [user code](#user-code) and [dependencies](#dependencies).
+
+## Init
+
+`:init` names a function of no arguments. The server calls it once at startup,
+before clients connect. If the function throws, the server prints the error and
+continues to start.
+
+```clojure
+;; .cljconf/org.clojure/clojure-cli.repl.edn
+{:init dev.uptime/install}
+```
+
+This example defines a `user/uptime` function that returns the milliseconds
+since the server started.
+
+```clojure
+(ns dev.uptime
+  (:import [java.lang.management ManagementFactory]))
+
+(defn install []
+  (intern 'user 'uptime (fn [] (.getUptime (ManagementFactory/getRuntimeMXBean)))))
+```
 
 ## User code
 

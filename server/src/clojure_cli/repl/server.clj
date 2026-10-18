@@ -140,11 +140,18 @@
                     (constantly (fn [prefix ns options]
                                   (completions prefix (assoc options :ns ns)))))))
 
-(defn start [{:keys [middleware port] :as config}]
+(defn run-init [sym]
+  (let [init (or (requiring-resolve sym)
+                 (throw (ex-info (str "clojure-cli.repl: :init var not found: " sym) {:init sym})))]
+    (try (init)
+         (catch Throwable e (println "clojure-cli.repl: :init failed:" (ex-message e))))))
+
+(defn start [{:keys [middleware port init] :as config}]
   (when-let [vars (not-empty (configured-dynamic-vars config))]
     (alter-var-root #'nrepl-config/config assoc :dynamic-vars vars))
   (hooks/install config)
   (install-compliment)
+  (when init (run-init init))
   (let [extra (mapcat resolve-middleware middleware)
         handler (apply server/default-handler #'hooks/middleware #'doc-middleware #'auto-require-middleware #'inspect/middleware #'watch/middleware extra)
         srv (server/start-server :port (or port 0) :handler handler)]
