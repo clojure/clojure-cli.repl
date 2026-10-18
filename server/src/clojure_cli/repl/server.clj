@@ -8,6 +8,7 @@
     [clojure.tools.deps.config :as dc]
     [nrepl.config :as nrepl-config]
     [nrepl.middleware :as middleware]
+    [nrepl.middleware.completion :as completion]
     [nrepl.misc :refer [response-for]]
     [nrepl.server :as server]
     [nrepl.transport :as transport]
@@ -132,10 +133,18 @@
               (middleware/set-descriptor! v {:requires #{#'watch/middleware} :expects #{"eval"} :handles {}}))
             [v])))))
 
+(defn install-compliment []
+  (when-let [completions (try (requiring-resolve 'compliment.core/completions)
+                              (catch Throwable _ nil))]
+    (alter-var-root #'completion/*complete-fn*
+                    (constantly (fn [prefix ns options]
+                                  (completions prefix (assoc options :ns ns)))))))
+
 (defn start [{:keys [middleware port] :as config}]
   (when-let [vars (not-empty (configured-dynamic-vars config))]
     (alter-var-root #'nrepl-config/config assoc :dynamic-vars vars))
   (hooks/install config)
+  (install-compliment)
   (let [extra (mapcat resolve-middleware middleware)
         handler (apply server/default-handler #'hooks/middleware #'doc-middleware #'auto-require-middleware #'inspect/middleware #'watch/middleware extra)
         srv (server/start-server :port (or port 0) :handler handler)]

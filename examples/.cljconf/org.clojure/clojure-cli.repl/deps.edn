@@ -1,1 +1,2 @@
-{:paths ["src"]}
+{:paths ["src"]
+ :aliases {:clojure-cli.repl/server {:extra-deps {compliment/compliment {:mvn/version "0.8.2"}}}}}

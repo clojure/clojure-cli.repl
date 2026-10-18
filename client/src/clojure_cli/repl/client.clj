@@ -12,7 +12,7 @@
     [clojure-cli.repl.color :as color])
   (:import
     [org.jline.terminal Terminal Terminal$Signal Terminal$SignalHandler TerminalBuilder]
-    [org.jline.reader Buffer LineReader LineReaderBuilder Reference Widget EndOfFileException UserInterruptException]
+    [org.jline.reader Buffer Candidate Completer LineReader LineReaderBuilder Reference Widget EndOfFileException UserInterruptException]
     [org.jline.reader.impl LineReaderImpl]
     [org.jline.keymap KeyMap BindingReader]
     [org.jline.utils AttributedString Display InfoCmp$Capability]))
@@ -115,6 +115,19 @@
             :when (= self-insert (.getBound keymap k))]
       (.unbind keymap k))))
 
+(defn completer []
+  (reify Completer
+    (complete [_ _rdr line candidates]
+      (let [word (.word line)
+            prefix (subs word 0 (.wordCursor line))
+            start (- (.cursor line) (.wordCursor line))
+            src (.line line)
+            context (str (subs src 0 start) "__prefix__" (subs src (+ start (count word))))]
+        (when (seq prefix)
+          (let [completions (:completions (nrepl/request @api/session {:op "completions" :prefix prefix :ns @api/current-ns :options {:context context}}))]
+            (doseq [{:keys [candidate type]} completions]
+              (.add candidates (Candidate. candidate candidate nil type nil nil false)))))))))
+
 (defn build-reader ^LineReader [{:keys [editing-mode bracket-pairs]} history-file]
   (let [terminal (-> (TerminalBuilder/builder)
                      (.system true)
@@ -124,6 +137,7 @@
         rdr      (-> (LineReaderBuilder/builder)
                      (.terminal terminal)
                      (.parser (reader/clojure-parser))
+                     (.completer (completer))
                      (.highlighter (highlight/clojure-highlighter))
                      (.variable LineReader/SECONDARY_PROMPT_PATTERN "%P ")
                      (.variable LineReader/HISTORY_FILE history-file)

@@ -103,5 +103,7 @@ are used to target one process.
 {:paths ["src"]
  :deps  {org.clojure/data.json {:mvn/version "2.5.2"}}
  :aliases {:clojure-cli.repl/client {:extra-deps {...}}
-           :clojure-cli.repl/server {:extra-deps {...}}}}
+           :clojure-cli.repl/server {:extra-deps {compliment/compliment {:mvn/version "0.8.2"}}}}}
 ```
+
+For example, compliment on the server adds local bindings to TAB completion.

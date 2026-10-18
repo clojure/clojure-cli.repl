@@ -30,18 +30,6 @@
       (let [form (r/read {:eof ::eof} rdr)]
         (if (identical? form ::eof) acc (recur (conj acc form)))))))
 
-(defn clojure-parser
-  "On Enter, ACCEPT_LINE, throws EOFError for incomplete input so JLine will
-   read multiple lines. Every other case, complete input, or any other context
-   such as tab completion, falls through to DefaultParser."
-  []
-  (let [default (DefaultParser.)]
-    (proxy [DefaultParser] []
-      (parse [line cursor context]
-        (when (and (= context Parser$ParseContext/ACCEPT_LINE) (not (complete? line)))
-          (throw (EOFError. -1 -1 "Incomplete form" "...")))
-        (.parse default line cursor context)))))
-
 (defn skip-string
   "Given the index of an opening quote, return the index one after
    the closing quote. Handles backslash escapes and returns len if the
@@ -112,6 +100,21 @@
         on-token? (and (<= 0 pos) (token-char? (.charAt src pos)))]
     (when on-token?
       (subs src (token-start src pos) (token-end src pos)))))
+
+(defn clojure-parser
+  "Throwing EOFError on incomplete input makes JLine read another line.
+  Splits words on Clojure token boundaries to support completion."
+  []
+  (let [default (doto (proxy [DefaultParser] []
+                        (isDelimiterChar [^CharSequence buf pos]
+                          (not (token-char? (.charAt buf pos)))))
+                  (.setQuoteChars (char-array 0))
+                  (.setEscapeChars (char-array 0)))]
+    (proxy [DefaultParser] []
+      (parse [line cursor context]
+        (when (and (= context Parser$ParseContext/ACCEPT_LINE) (not (complete? line)))
+          (throw (EOFError. -1 -1 "Incomplete form" "...")))
+        (.parse default line cursor context)))))
 
 (defn indent-column
   "Spaces to indent a continuation line"

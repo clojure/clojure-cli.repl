@@ -1,7 +1,7 @@
 # clojure-cli.repl
 
 A terminal REPL for the Clojure CLI that you can use on its own, with multi-line
-editing, structural editing, inline eval, doc lookup, and a data inspector. You
+editing, structural editing, completion, inline eval, doc lookup, and a data inspector. You
 can also use it with your editor, where evaluations sent from the editor show in
 the terminal with their output, ready to inspect.
 
