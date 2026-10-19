@@ -42,7 +42,7 @@ The scope column names the process a key configures. Either the JLine client or 
 | `:eval-form-at-cursor` | client | [key string](#key-strings) | Eval the form at the cursor, printing the result above the prompt. | none |
 | `:doc-at-cursor` | client | [key string](#key-strings) | Doc for the symbol at the cursor, Clojure or Java. | none |
 | `:inspect` | client | [key string](#key-strings) | Open the [inspector](inspector.md) on the last result. | none |
-| `:paredit/<op>` | client | [key string](#key-strings) | Bind a [structural editing op](editing.md). Example: `:paredit/raise "C-]"`. | none |
+| `:paredit/<op>` | client | [key string](#key-strings) | Bind a [structural editing op](editing.md). Example: `:paredit/raise "C-x r"`. | none |
 | `:auto-require` | client | vector of libspecs | [Required into each namespace](#auto-require). | none |
 | `:follow-editor-ns` | client | boolean | Enter the namespace of each eval [sent from an editor](editors.md). | `false` |
 | `:middleware` | server | vector of [qualified symbols](#user-code) | [Server data on eval responses](middleware.md). | none |

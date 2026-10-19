@@ -6,8 +6,8 @@ Each available op has a config key that binds it to a [key string](configuration
 
 ```clojure
 ;; .cljconf/org.clojure/clojure-cli.repl.edn
-{:paredit/slurp-forward "C-t"
- :paredit/raise "C-]"}
+{:paredit/slurp-forward "C-x )"
+ :paredit/raise "C-x r"}
 ```
 
 | Op | Effect |

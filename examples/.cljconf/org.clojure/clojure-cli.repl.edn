@@ -3,6 +3,14 @@
  :keybindings dev.keybindings/install
  :print-hook dev.hooks/pprint-values
  :bracket-pairs false
- :eval-form-at-cursor "M-e"
- :doc-at-cursor "M-d"
- :inspect "M-i"}
+ :eval-form-at-cursor "C-x e"
+ :doc-at-cursor "C-x d"
+ :inspect "C-x i"
+ :paredit/slurp-forward "C-x )"
+ :paredit/barf-forward "C-x }"
+ :paredit/slurp-backward "C-x ("
+ :paredit/barf-backward "C-x {"
+ :paredit/raise "C-x r"
+ :paredit/splice "C-x s"
+ :paredit/kill "C-k"
+ :paredit/wrap-list "C-x w"}

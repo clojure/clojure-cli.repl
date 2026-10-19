@@ -4,7 +4,7 @@ The `:inspect` config key binds a key to open the inspector on the last result `
 
 ```clojure
 ;; .cljconf/org.clojure/clojure-cli.repl.edn
-{:inspect "M-i"}
+{:inspect "C-x i"}
 ```
 
 The top line shows the traversal path and the type of the current value.
