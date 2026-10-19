@@ -100,6 +100,16 @@ The aliases and refers defined here will always be available. The REPL requires 
 in the starting namespace and again in each namespace it enters. Libspecs resolve on
 the server classpath, which includes the config's [user code](#user-code) and [dependencies](#dependencies).
 
+## Completion
+
+TAB completes vars, namespaces, keywords, and Java classes and methods. To also
+complete local bindings, add compliment to the server:
+
+```clojure
+;; .cljconf/org.clojure/clojure-cli.repl/deps.edn
+{:aliases {:clojure-cli.repl/server {:extra-deps {compliment/compliment {:mvn/version "0.8.2"}}}}}
+```
+
 ## Init
 
 `:init` names a function of no arguments. The server calls it once at startup,
@@ -142,5 +152,3 @@ are used to target one process.
  :aliases {:clojure-cli.repl/client {:extra-deps {...}}
            :clojure-cli.repl/server {:extra-deps {compliment/compliment {:mvn/version "0.8.2"}}}}}
 ```
-
-For example, compliment on the server adds local bindings to TAB completion.
