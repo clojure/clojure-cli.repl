@@ -10,7 +10,7 @@ the terminal with their output, ready to inspect.
 To try it with no setup, run this in any project directory:
 
 ```
-clojure -Sdeps '{:deps {io.github.clojure/clojure-cli.repl-server {:mvn/version "0.1.1"}}}' -M -m clojure-cli.repl.server repl
+clojure -Sdeps '{:deps {io.github.clojure/clojure-cli.repl-server {:mvn/version "0.2.0"}}}' -M -m clojure-cli.repl.server repl
 ```
 
 ## Install
@@ -19,12 +19,12 @@ Add these aliases to your user `deps.edn`:
 
 ```clojure
 {:aliases
- {:repl   {:extra-deps {io.github.clojure/clojure-cli.repl-server {:mvn/version "0.1.1"}}
+ {:repl   {:extra-deps {io.github.clojure/clojure-cli.repl-server {:mvn/version "0.2.0"}}
            :main-opts ["-m" "clojure-cli.repl.server" "repl"]}
-  :serve  {:extra-deps {io.github.clojure/clojure-cli.repl-server {:mvn/version "0.1.1"}}
+  :serve  {:extra-deps {io.github.clojure/clojure-cli.repl-server {:mvn/version "0.2.0"}}
            :main-opts ["-m" "clojure-cli.repl.server"]}
   :attach {:replace-paths []
-           :replace-deps {io.github.clojure/clojure-cli.repl-client {:mvn/version "0.1.1"}}
+           :replace-deps {io.github.clojure/clojure-cli.repl-client {:mvn/version "0.2.0"}}
            :jvm-opts ["--enable-native-access=ALL-UNNAMED"]
            :main-opts ["-m" "clojure-cli.repl.client"]}}}
 ```
