@@ -28,6 +28,15 @@ file that it writes.
 When an editor starts the server, run `clojure -M:attach` to launch the terminal
 REPL, by hand or scripted from your editor.
 
+## Code echo
+
+Set `:echo-editor-code` to `false` to show only the output of each editor evaluation.
+
+```clojure
+;; .cljconf/org.clojure/clojure-cli.repl.edn
+{:echo-editor-code false}
+```
+
 ## Namespace
 
 Each editor evaluation runs in the namespace of the file that the code comes

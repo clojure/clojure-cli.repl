@@ -1,6 +1,8 @@
 Changelog
 ===========
 
+* 0.2.1 on Oct 19, 2026
+  * Add `:echo-editor-code` to show only output from editor evaluations
 * 0.2.0 on Oct 19, 2026
   * Show evaluations sent from an editor in the terminal REPL
   * TAB completion using the nREPL completions op

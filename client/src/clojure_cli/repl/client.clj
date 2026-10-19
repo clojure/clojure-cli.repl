@@ -398,8 +398,8 @@
   (.setPrompt rdr (render-prompt prompt-fn))
   (.redisplay rdr))
 
-(defn show-reply [evals {:keys [eval-id code out err value status] :as reply} rdr prompt-fn libspecs follow-ns?]
-  (when code (print-echo reply prompt-fn))
+(defn show-reply [evals {:keys [eval-id code out err value status] :as reply} rdr prompt-fn libspecs follow-ns? echo-code?]
+  (when (and code echo-code?) (print-echo reply prompt-fn))
   (when-let [text (or out err value)] (api/print-above [{:text (str/trim-newline text)}]))
   (let [merged (merge (get evals eval-id) reply)]
     (if (some #{"eval-done"} status)
@@ -411,10 +411,10 @@
   "Runs on its own thread since the main thread is waiting for input.
    Continues to run until the connection is closed.
    Replies are collected until each eval is done."
-  [port session-id rdr prompt-fn libspecs follow-ns?]
+  [port session-id rdr prompt-fn libspecs follow-ns? echo-code?]
   (future
     (reduce (fn [evals reply]
-              (try (show-reply evals reply rdr prompt-fn libspecs follow-ns?)
+              (try (show-reply evals reply rdr prompt-fn libspecs follow-ns? echo-code?)
                    (catch Throwable e
                      (api/print-above [{:text (str "clojure-cli.repl: watch: " (ex-message e))}])
                      evals)))
@@ -444,7 +444,7 @@
                (handle [_ _sig]
                  (nrepl/interrupt session))))
     (println "connected to nREPL on" port)
-    (watch-evals port session-id rdr prompt-fn libspecs (:follow-editor-ns config))
+    (watch-evals port session-id rdr prompt-fn libspecs (:follow-editor-ns config) (:echo-editor-code config true))
     (auto-require @api/current-ns libspecs)
     (loop []
       (let [line (try (.readLine rdr (render-prompt prompt-fn))

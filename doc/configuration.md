@@ -45,6 +45,7 @@ The scope column names the process a key configures. Either the JLine client or 
 | `:paredit/<op>` | client | [key string](#key-strings) | Bind a [structural editing op](editing.md). Example: `:paredit/raise "C-x r"`. | none |
 | `:auto-require` | client | vector of libspecs | [Required into each namespace](#auto-require). | none |
 | `:follow-editor-ns` | client | boolean | Enter the namespace of each eval [sent from an editor](editors.md). | `false` |
+| `:echo-editor-code` | client | boolean | Show the code of each eval [sent from an editor](editors.md) above its output. | `true` |
 | `:middleware` | server | vector of [qualified symbols](#user-code) | [Server data on eval responses](middleware.md). | none |
 | `:eval-hook` | server | [qualified symbol](#user-code) | [Wraps eval](hooks.md). | none |
 | `:print-hook` | server | [qualified symbol](#user-code) | [Wraps result printing](hooks.md). | none |
