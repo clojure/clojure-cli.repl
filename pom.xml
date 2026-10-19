@@ -12,7 +12,7 @@
   <parent>
     <groupId>org.clojure</groupId>
     <artifactId>pom.contrib</artifactId>
-    <version>1.4.3</version>
+    <version>1.4.4</version>
   </parent>
 
   <modules>
