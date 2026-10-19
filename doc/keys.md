@@ -26,7 +26,7 @@ Example: Insert a UUID at the cursor with `C-t`
 
 ### Bind keys
 
-* `(api/key-sequence s)`: Given a [key string](configuration.md#key-strings) `s`, return the characters the terminal sends for the corresponding keys.
+* `(api/key-sequence key-string)`: Given a [key string](configuration.md#key-strings) `key-string`, return the characters the terminal sends for the corresponding keys.
 * `(api/widget f)`: Given a zero-arg function `f`, return a JLine widget that
   runs it. Any return value of `f` is ignored.
 * `(api/bind-key reader keyseq widget)`: Bind the widget to the keyseq.

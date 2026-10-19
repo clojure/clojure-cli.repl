@@ -62,7 +62,21 @@ The scope column names the process a key configures. Either the JLine client or 
 
 ### Key strings
 
-`C-x` is ctrl-x, `M-x` is alt-x, `TAB` and `RET` name themselves, anything else is the literal char.
+Key strings use Emacs key notation.
+
+| Key string | Keys |
+|------------|------|
+| `x` | x |
+| `C-e` | ctrl-e |
+| `M-r` | alt-r |
+| `C-M-f` | ctrl-alt-f |
+| `C-x d` | ctrl-x, then d |
+| `TAB` `RET` `SPC` `ESC` `DEL` | named keys |
+| `<up>` `<down>` `<left>` `<right>` `<home>` `<end>` | special keys |
+
+* `C-` and `M-` cannot be used with special keys.
+* `C-c` interrupts and cannot be bound.
+* An invalid key string stops the client with an error.
 
 **NOTE** `M-` keys on macOS only work when your terminal sends Option as Meta.
 
