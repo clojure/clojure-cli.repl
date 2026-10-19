@@ -182,7 +182,7 @@
         (when-let [code (reader/form-at-cursor (.toString buf) (.cursor buf))]
           (let [{:keys [value err]} (api/eval-code code)]
             (api/print-above [{:text (str "=> " (or value err) "\n")
-                               :style {:fg :bright-black}}])))))))
+                               :style {:faint true}}])))))))
 
 (defn doc-preview [text cap]
   (let [lines (str/split-lines text)]
@@ -197,7 +197,7 @@
         text (str/trim-newline (or doc ""))]
     (reset! doc-view {:token token :text text})
     (api/show-below [{:text (doc-preview text (quot (api/terminal-height) 4))
-                      :style {:fg :bright-black}}])))
+                      :style {:faint true}}])))
 
 (defn doc-at-cursor
   "Widget previewing the doc for the token at the cursor.
@@ -244,7 +244,7 @@
                (str "…" (subs path (inc (- (count path) path-width))))
                path)]
     [{:text path :style {:fg :cyan :bold true}}
-     {:text (str gap info) :style {:fg :bright-black}}]))
+     {:text (str gap info) :style {:faint true}}]))
 
 (defn body-rows [{:keys [leaf entries]} cursor]
   (if leaf
@@ -254,7 +254,7 @@
 (defn inspector-lines [{:keys [path info header] :as view} cursor cols footer]
   (let [head [(breadcrumb path info cols) [{:text header :style {:bold true}}]]
         body (body-rows view cursor)
-        tail [[{:text ""}] [{:text (or footer (footer-text view)) :style {:fg :bright-black}}]]
+        tail [[{:text ""}] [{:text (or footer (footer-text view)) :style {:faint true}}]]
         rows (reduce into [head body tail])]
     (mapv #(clamped-line cols %) rows)))
 
@@ -390,7 +390,7 @@
 (defn print-echo [{:keys [code column] ns-name :ns} prompt-fn]
   (let [prompt (prompt-in prompt-fn ns-name)
         width (.columnLength ^AttributedString (last (.columnSplitLength (color/build-attrib-str prompt) Integer/MAX_VALUE)))]
-    (api/print-above (conj prompt {:text (align code (or column 1) width) :style {:fg :bright-black}}))))
+    (api/print-above (conj prompt {:text (align code (or column 1) width) :style {:faint true}}))))
 
 (defn refresh-prompt [response ^LineReaderImpl rdr prompt-fn libspecs follow-ns?]
   (reset! api/last-response response)

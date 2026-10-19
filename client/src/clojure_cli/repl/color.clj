@@ -30,13 +30,14 @@
 (defn build-style
   "Build a JLine AttributedStyle from a style map, nil values yield the default style."
   [style-map]
-  (let [{:keys [fg bg bold italic underline inverse]} style-map
+  (let [{:keys [fg bg bold faint italic underline inverse]} style-map
         fg-code (color-code fg)
         bg-code (color-code bg)]
     (cond-> AttributedStyle/DEFAULT
       fg-code   (.foreground fg-code)
       bg-code   (.background bg-code)
       bold      (.bold)
+      faint     (.faint)
       italic    (.italic)
       underline (.underline)
       inverse   (.inverse))))

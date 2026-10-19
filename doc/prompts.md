@@ -23,7 +23,7 @@ A segment is a map of `:text` and an optional `:style`:
    {:text " => "}])
 ```
 
-Style keys: `:fg`, `:bg`, `:bold`, `:italic`, `:underline`, and `:inverse`.
+Style keys: `:fg`, `:bg`, `:bold`, `:faint`, `:italic`, `:underline`, and `:inverse`.
 Colors: `:black`, `:red`, `:green`, `:yellow`, `:blue`, `:magenta`, `:cyan`, `:white`,
 and their `:bright-*` variants or an xterm 256 value (0-255).
 
