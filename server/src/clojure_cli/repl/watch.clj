@@ -55,7 +55,8 @@
 
 (defn track-eval [handler {:keys [session] :as msg}]
   (swap! sessions assoc (session-id session) session)
-  (reset! latest (session-id session))
+  (when (or (:file msg) (contains? @watchers (session-id session)))
+    (reset! latest (session-id session)))
   (if (:file msg) ;; Unlike the client, editors send :file with evals
     (do (reply-to-watchers msg (echoed-request msg))
         (handler (assoc msg :transport (watched-transport msg))))
