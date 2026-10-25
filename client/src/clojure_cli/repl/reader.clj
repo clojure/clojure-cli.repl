@@ -3,8 +3,7 @@
     [clojure.tools.reader :as r]
     [clojure.tools.reader.reader-types :as rt])
   (:import
-    [org.jline.reader EOFError Parser$ParseContext]
-    [org.jline.reader.impl DefaultParser]))
+    [org.jline.reader CompletingParsedLine EOFError Parser Parser$ParseContext]))
 
 (set! *warn-on-reflection* true)
 
@@ -105,16 +104,22 @@
   "Throwing EOFError on incomplete input makes JLine read another line.
   Splits words on Clojure token boundaries to support completion."
   []
-  (let [default (doto (proxy [DefaultParser] []
-                        (isDelimiterChar [^CharSequence buf pos]
-                          (not (token-char? (.charAt buf pos)))))
-                  (.setQuoteChars (char-array 0))
-                  (.setEscapeChars (char-array 0)))]
-    (proxy [DefaultParser] []
-      (parse [line cursor context]
-        (when (and (= context Parser$ParseContext/ACCEPT_LINE) (not (complete? line)))
-          (throw (EOFError. -1 -1 "Incomplete form" "...")))
-        (.parse default line cursor context)))))
+  (reify Parser
+    (parse [_ line cursor context]
+      (when (and (= context Parser$ParseContext/ACCEPT_LINE) (not (complete? line)))
+        (throw (EOFError. -1 -1 "Incomplete form" "...")))
+      (let [start (token-start line cursor)
+            word (subs line start (token-end line cursor))]
+        (reify CompletingParsedLine
+          (word [_] word)
+          (wordCursor [_] (- cursor start))
+          (wordIndex [_] 0)
+          (words [_] [word])
+          (line [_] line)
+          (cursor [_] cursor)
+          (escape [_ candidate _complete] candidate)
+          (rawWordCursor [_] (- cursor start))
+          (rawWordLength [_] (count word)))))))
 
 (defn indent-column
   "Spaces to indent a continuation line"
