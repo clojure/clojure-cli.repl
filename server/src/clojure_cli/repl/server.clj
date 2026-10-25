@@ -4,6 +4,7 @@
     [clojure.edn :as edn]
     [clojure.java.io :as io]
     [clojure.java.shell :as sh]
+    [clojure.main :as main]
     [clojure.string :as str]
     [clojure.tools.deps.config :as dc]
     [nrepl.config :as nrepl-config]
@@ -151,6 +152,8 @@
     (alter-var-root #'nrepl-config/config assoc :dynamic-vars vars))
   (hooks/install config)
   (install-compliment)
+  (binding [*ns* (the-ns 'user)]
+    (apply require main/repl-requires))
   (when init (run-init init))
   (let [extra (mapcat resolve-middleware middleware)
         handler (apply server/default-handler #'hooks/middleware #'doc-middleware #'auto-require-middleware #'inspect/middleware #'watch/middleware extra)
