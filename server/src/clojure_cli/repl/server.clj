@@ -192,6 +192,8 @@
         (doseq [^java.io.File f entries]
           (.addURL loader (.toURL (.toURI f))))
         (.setContextClassLoader thread loader)
+        (when (.isBound clojure.lang.Compiler/LOADER)
+          (.set clojure.lang.Compiler/LOADER loader))
         (#'clojure.core/load-data-readers))))
   (dc/config lib))
 
