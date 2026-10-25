@@ -229,11 +229,14 @@
 
 (defn -main [& args]
   (check-clojure-version)
-  (let [srv (start (load-config 'org.clojure/clojure-cli.repl))]
+  (let [repl? (= "repl" (first args))
+        launcher-middleware (map symbol (if repl? (rest args) args))
+        config (update (load-config 'org.clojure/clojure-cli.repl) :middleware (fnil into []) launcher-middleware)
+        srv (start config)]
     (.addShutdownHook (Runtime/getRuntime)
                       (Thread. ^Runnable (fn [] (stop srv)))) ;; on shutdown remove .nrepl-port
     (println "nREPL server started on port" (:port srv))
-    (if (= "repl" (first args))
+    (if repl?
       (do
         (ignore-interrupt)
         (.waitFor (spawn-client (:port srv)))

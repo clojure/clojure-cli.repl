@@ -28,6 +28,16 @@ and the REPL will not start.
 {:middleware [^:optional org.corfield.rephrase.nrepl/wrap-rephrase]}
 ```
 
+## Middleware from a launcher
+
+A launcher can add middleware without changing the user's configuration.
+Middleware symbols provided after the `repl` argument are appended to
+`:middleware`. Dependencies must be on the server classpath, for example through `-Sdeps`.
+
+```
+clojure -M -m clojure-cli.repl.server repl cider.nrepl/cider-middleware
+```
+
 ## Adding data to responses
 
 `clojure-cli.repl.middleware/assoc-response` is a convenience function to
