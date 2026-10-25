@@ -42,7 +42,7 @@ The rest of the api namespace is documented with [keybindings](keys.md#the-api).
 ## Server data
 
 To isolate dependencies, the prompt runs in a separate process from where code is evaluated.
-[Middleware](middleware.md) is required to add server data to the prompt.
+[Middleware](middleware.md#adding-data-to-responses) is required to add server data to the prompt.
 
 ## Example
 
