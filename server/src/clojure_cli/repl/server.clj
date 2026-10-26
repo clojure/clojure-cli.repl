@@ -226,8 +226,8 @@
         .start)))
 
 (defn check-clojure-version []
-  (when (< (:minor *clojure-version*) 12)
-    (println "clojure-cli.repl requires Clojure 1.12 or later, started with" (clojure-version))
+  (when (< (:minor *clojure-version*) 10)
+    (println "clojure-cli.repl requires Clojure 1.10 or later, started with" (clojure-version))
     (System/exit 1)))
 
 (defn -main [& args]

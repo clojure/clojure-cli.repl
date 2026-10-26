@@ -33,7 +33,7 @@ The REPL runs as two processes. An nREPL server on the project classpath evaluat
 code. A JLine client in its own JVM provides the terminal prompt, which keeps the
 client dependencies off the project classpath.
 
-**Note: Java 17+ and Clojure 1.12+ are required**
+**Note: Java 17+ and Clojure 1.10+ are required. Java doc lookup needs Clojure 1.11+.**
 
 ## Run
 
