@@ -1,6 +1,9 @@
 Changelog
 ===========
 
+* 0.2.3 on Oct 26, 2026
+  * Update nREPL to 1.8.0
+  * Useful error when the client starts with a version less than 1.12
 * 0.2.2 on Oct 26, 2026
   * Support Clojure 1.10+ in the project (#8)
   * Require clojure.main/repl-requires in user at startup
