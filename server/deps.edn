@@ -3,4 +3,4 @@
         org.clojure/tools.deps.config {:mvn/version "0.1.5"}
         org.clojure/data.json         {:mvn/version "2.5.2"}
         io.github.clojure/java.doc    {:mvn/version "0.1.6"}
-        nrepl/nrepl                   {:mvn/version "1.7.0"}}}
+        nrepl/nrepl                   {:mvn/version "1.8.0"}}}
