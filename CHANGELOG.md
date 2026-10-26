@@ -1,6 +1,13 @@
 Changelog
 ===========
 
+* 0.2.2 on Oct 26, 2026
+  * Support Clojure 1.10+ in the project (#8)
+  * Require clojure.main/repl-requires in user at startup
+  * Load user config code when the server is started with -e
+  * Launchers can append middleware through server arguments
+  * Tooling-session evals no longer change latest
+  * Use JLine public Parser interface instead of DefaultParser impl
 * 0.2.1 on Oct 19, 2026
   * Add `:echo-editor-code` to show only output from editor evaluations
 * 0.2.0 on Oct 19, 2026
