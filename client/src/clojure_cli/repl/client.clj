@@ -1,5 +1,6 @@
 (ns clojure-cli.repl.client
   (:require
+    [clojure-cli.repl.version-check] ;; keep first
     [clojure.edn :as edn]
     [clojure.string :as str]
     [clojure.tools.deps.config :as dc]
